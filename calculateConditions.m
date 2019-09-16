@@ -6,7 +6,7 @@ global TRIALINFO
 global AUDITORY
 global VISUAL
 
-TRIALINFO.stimulusType = [0 1]; % 0 for visual only, 1 for auditory only, 2 for both provided
+% TRIALINFO.stimulusType = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 % 0 for segregation
 inteCondition0 = {};
