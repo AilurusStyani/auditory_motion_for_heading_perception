@@ -6,6 +6,8 @@ global SCREEN
 global AUDITORY
 global VISUAL
 global GL
+global FRUSTUM
+global STARDATA
 
 subjectName = inputdlg({'Please input participant''s initials.'},'1',1);
 fileName = ['auditoryMotion_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
@@ -36,7 +38,7 @@ TRIALINFO.repetition      = 15;
 TRIALINFO.headingDegree   = {-10 -5 0 5 10};
 TRIALINFO.headingDistance = {5 10};
 TRIALINFO.headingTime      = {1 2};
-TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
@@ -49,12 +51,12 @@ TRIALINFO.intergration = [1];
 
 % for SCREEN
 if testMode
-%     %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to be measured on your own PC
-%     %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to be measured on your own PC
+    %     %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to be measured on your own PC
+    %     %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to be measured on your own PC
     SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to be measured on your own PC
     SCREEN.heightCM = 30*coordinateMuilty; % cm, need to be measured on your own PC
-%     SCREEN.widthCM = 52.4*coordinateMuilty; % cm, need to measure in your own PC
-%     SCREEN.heightCM = 29.4*coordinateMuilty; % cm, need to measure in your own PC
+    %     SCREEN.widthCM = 52.4*coordinateMuilty; % cm, need to measure in your own PC
+    %     SCREEN.heightCM = 29.4*coordinateMuilty; % cm, need to measure in your own PC
 else
     SCREEN.widthCM = 120*coordinateMuilty; % cm
     SCREEN.heightCM = 65*coordinateMuilty; % cm
@@ -88,10 +90,16 @@ AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
 AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
 AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
-AUDITORY.sourceNum     = {1,2};
-AUDITORY.sourceHeading = {180,[180 0]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {50*coordinateMuilty , [50*coordinateMuilty 60*coordinateMuilty]}; % cm
-AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
+% % sample currently not work for double sources.
+% AUDITORY.sourceNum     = {1,2};
+% AUDITORY.sourceHeading = {180,[180 0]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% AUDITORY.sourceDistance = {50*coordinateMuilty , [50*coordinateMuilty 60*coordinateMuilty]}; % cm
+% AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
+
+AUDITORY.sourceNum     = {1};
+AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
+AUDITORY.sourceDegree = {0}; % degree for position
 
 %% trial conditions and order
 calculateConditions();
@@ -121,10 +129,10 @@ disp('Continue?')
 % terminate the block if you feel it is too long
 tic
 while toc<2 % unit second
-   [~, ~, keyCode]=KbCheck; 
-   if keyCode(escape)
-       return
-   end
+    [~, ~, keyCode]=KbCheck;
+    if keyCode(escape)
+        return
+    end
 end
 
 %% initial opengl
@@ -238,24 +246,167 @@ if ~testMode
 end
 
 %% initial openal
-auditoryCue = sum(ismember(TRIALINFO.stimulusType,[1 2]));
-if auditoryCue
-    % Initialize OpenAL subsystem at debuglevel 2 with the default output device: 
-    InitializeMatlabOpenAL(2);
-    
-    % Generate one sound buffer:
-    buffers = alGenBuffers(AUDITORY.sourceNum);
-    
-    % Query for errors:
-    alGetString(alGetError)
-    
-    soundfiles = dir(fullfile(pwd,'*.wav'));
-    
-    % Create a sound source:
-    sources = alGenSources(AUDITORY.sourceNum);
-    
-    perm = randperm(AUDITORY.sourceNum);
+% Initialize OpenAL subsystem at debuglevel 2 with the default output device:
+InitializeMatlabOpenAL(2);
+
+% Generate one sound buffer:
+buffers = alGenBuffers(max(cell2mat(AUDITORY.sourceNum)));
+
+% Query for errors:
+alGetString(alGetError)
+
+soundFiles = dir(fullfile(pwd,'*.wav'));
+
+% Create a sound source:
+sources = alGenSources(max(cell2mat(AUDITORY.sourceNum)));
+
+% no idea whats this code for in OSX, but just left it here
+if IsOSX
+    alcASASetListener(ALC.ASA_REVERB_ON, 1);
+    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
 end
-%%
+
 HideCursor(SCREEN.screenId);
 GenerateStarField();
+
+% Start playback for these sources:
+alSourcePlayv(length(sources), sources);
+
+%% trial start
+while trialI < trialNum+1
+    % TRIALINFO.trialConditions =
+    % {visualDegree visualDistance visualTime, ...
+    %       1               2               3
+    %
+    % auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
+    %       4               5               6                7              8                9                  10
+    
+    conditioni = trialIndex(trialOrder(trialI),:);
+    visualHeadingi = conditioni{1:3};
+    auditoryHeadingi = conditioni{4:6};
+    auditorySourcei = conditioni(7:10);
+    
+    if ~sum(isnan(visualHeadingi))
+        [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
+    end
+    if ~sum(isnan(auditoryHeadingi))
+        [ax,ay,az,afx,afy,afz] = calMove(auditoryHeadingi,SCREEN.refreshRate);
+    end
+    % set auditory source
+    for i = 1:auditorySourcei{1}
+        filei = mod(i,length(soundFiles))+1;
+        soundName = fullfile(pwd,soundFiles(filei).name);
+        
+        [myNoise,freq]= psychwavread(soundName);
+        myNoise = myNoise(:, 1);
+        
+        % Convert it...
+        myNoise = int16(myNoise * 32767);
+        
+        alBufferData( buffers(i), AL.FORMAT_MONO16, myNoise, length(myNoise)*2, freq);
+        
+        % Attach our buffer to it: The source will play the buffers sound data.
+        alSourceQueueBuffers(sources(i), 1, buffers(i));
+        
+        % Switch source to looping playback: It will repeat playing the buffer until its stopped.
+        alSourcei(sources(i), AL.LOOPING, AL.TRUE);
+        
+        % Set emission volume to 100%, aka a gain of 1.0:
+        alSourcef(sources(i), AL.GAIN, 1);
+        
+        alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
+        alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
+        alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+        
+        alSource3f(sources(i), AL.POSITION, auditorySourcei{2}(i)*sind(auditorySourcei{3}(i)), 0, -auditorySourcei{2}(i)*cosd(auditorySourcei{3}(i)));
+        
+        % Sources themselves remain static in space:
+        alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
+        
+        if IsOSX
+            % Source emits some sound that gets reverbrated in room:
+            alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
+        end
+    end
+    
+    if exist(vx,'value')
+        frameNum = length(vx);
+    end
+    if exist(ax,'value')
+        if exist(frameNum,'value')
+            if length(ax) ~= frameNum
+                frameNum = min(frameNum,length(ax));
+                [~, ~, ~] = DrawFormattedText(win, 'Auditory and visual cues have different duration! ','center',SCREEN.center(2)/2,[200 20 20]);
+                [~, ~, ~] = DrawFormattedText(win, 'The stimulus will be given based on shorter one!!!','center',SCREEN.center(2),[200 20 20]);
+                warning('Auditory and visual cues have different duration! The stimulus will be given based on shorter one!!!')
+                Screen('TextBackgroundColor',win, [0 0 0 0]);
+                Screen('DrawingFinished',win);
+                Screen('Flip',win,0,0);
+                WaitSecs(1);
+            end
+        else
+            frameNum = length(ax);
+        end
+    end
+    
+    % start giving frames
+    for framei = 1:frameNum
+        [~,~,keyCode] = KbCheck;
+        if keyCode(escape)
+            break
+        elseif keyCode(skipKey)
+            break
+        end
+        if exist(vx,'value')
+            % for visual cue
+            if keyCode(pageUp)
+                TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
+                disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+                calculateFrustum(coordinateMuilty);
+            end
+            if keyCode(pageDown)
+                if TRIALINFO.deviation > deviationAdjust
+                    TRIALINFO.deviation = TRIALINFO.deviation - deviationAdjust;
+                    disp(['binocular deviation: ' num2str(TRIALINFO.deviation)]);
+                    calculateFrustum(coordinateMuilty);
+                end
+            end
+            
+           %% draw for left eye
+            Screen('BeginOpenGL', win);
+            glColorMask(GL.TRUE, GL.FALSE, GL.FALSE, GL.FALSE);
+            glMatrixMode(GL.PROJECTION);
+            glLoadIdentity;
+            glFrustum( FRUSTUM.sinisterLeft,FRUSTUM.sinisterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+            glMatrixMode(GL.MODELVIEW);
+            glLoadIdentity;
+            gluLookAt(vx(framei)-TRIALINFO.deviation,vy(framei),vz(framei),vx(framei)-TRIALINFO.deviation+vfx(framei),vy(framei)+vfy(framei),vz(framei)+vfz(framei),0.0,1.0,0.0);
+            glClearColor(0,0,0,0);
+            glColor3f(1,1,0);
+            
+            % draw the fixation point and 3d dots
+            DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+            
+            %% draw for right eye
+            glColorMask(GL.FALSE, GL.TRUE, GL.FALSE, GL.FALSE);
+            glMatrixMode(GL.PROJECTION);
+            glLoadIdentity;
+            glFrustum( FRUSTUM.dexterLeft,FRUSTUM.dexterRight, FRUSTUM.bottom, FRUSTUM.top, FRUSTUM.clipNear, FRUSTUM.clipFar);
+            glMatrixMode(GL.MODELVIEW);
+            glLoadIdentity;
+            gluLookAt(vx(framei)+TRIALINFO.deviation,vy(framei),vz(framei),vx(framei)+TRIALINFO.deviation+vfx(framei),vy(framei)+vfy(framei),vz(framei)+vfz(framei),0.0,1.0,0.0);
+            glClearColor(0,0,0,0);
+            glColor3f(1,1,0);
+            
+            
+            % draw the fixation point and 3d dots for right eye
+            DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
+            Screen('EndOpenGL', win);
+        end
+        
+        if exist(ax,'value')
+            % for auditory cue
+        end
+    end
+end
