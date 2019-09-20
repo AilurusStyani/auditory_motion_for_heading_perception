@@ -1,3 +1,4 @@
+CloseOpenAL;
 clear all
 close all
 
@@ -44,6 +45,7 @@ TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
 TRIALINFO.fixationPeriod     = 0; % second
+TRIALINFO.fixationSizeD      = 0.25; % degree
 
 % 1 for intergration, both visual and auditory use the parameters in TRIALINFO,
 % 0 for segregation, visual cue will use VISUAL, and auditory will use AUDITORY.
@@ -166,7 +168,7 @@ TRIALINFO.fixationSizeP = degree2pix(TRIALINFO.fixationSizeD/2);
 TRIALINFO.fixationPosition = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
-
+SCREEN.frameRate = SCREEN.refreshRate;
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
 
@@ -177,6 +179,8 @@ glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
 % glEnable(GL_ALPHA_BLEND_CORRECTLY);
 % glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 Screen('EndOpenGL', win);
+
+GenerateStarField();
 
 %% initial eyelink
 if ~testMode
@@ -260,6 +264,14 @@ soundFiles = dir(fullfile(pwd,'*.wav'));
 % Create a sound source:
 sources = alGenSources(max(cell2mat(AUDITORY.sourceNum)));
 
+% if only one source, it will have some problem in matlab,
+if buffers == 0
+    buffers = buffers+1;
+end
+if sources==0
+    sources=sources+2;
+end
+
 % no idea whats this code for in OSX, but just left it here
 if IsOSX
     alcASASetListener(ALC.ASA_REVERB_ON, 1);
@@ -268,12 +280,12 @@ if IsOSX
 end
 
 HideCursor(SCREEN.screenId);
-GenerateStarField();
 
 % Start playback for these sources:
 alSourcePlayv(length(sources), sources);
 
 %% trial start
+trialI = 1;
 while trialI < trialNum+1
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
@@ -282,16 +294,16 @@ while trialI < trialNum+1
     % auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
     %       4               5               6                7              8                9                  10
     
-    conditioni = trialIndex(trialOrder(trialI),:);
-    visualHeadingi = conditioni{1:3};
-    auditoryHeadingi = conditioni{4:6};
+    conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
+    visualHeadingi = cell2mat(conditioni(1:3));
+    auditoryHeadingi = cell2mat(conditioni(4:6));
     auditorySourcei = conditioni(7:10);
     
     if ~sum(isnan(visualHeadingi))
-        [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
+        [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.frameRate);
     end
     if ~sum(isnan(auditoryHeadingi))
-        [ax,ay,az,afx,afy,afz] = calMove(auditoryHeadingi,SCREEN.refreshRate);
+        [ax,ay,az,afx,afy,afz] = calMove(auditoryHeadingi,SCREEN.frameRate);
     end
     % set auditory source
     for i = 1:auditorySourcei{1}
@@ -299,7 +311,7 @@ while trialI < trialNum+1
         soundName = fullfile(pwd,soundFiles(filei).name);
         
         [myNoise,freq]= psychwavread(soundName);
-        myNoise = myNoise(:, 1);
+%         myNoise = myNoise(:, 1);
         
         % Convert it...
         myNoise = int16(myNoise * 32767);
@@ -330,11 +342,11 @@ while trialI < trialNum+1
         end
     end
     
-    if exist(vx,'value')
+    if exist('vx','var')
         frameNum = length(vx);
     end
-    if exist(ax,'value')
-        if exist(frameNum,'value')
+    if exist('ax','var')
+        if exist('frameNum','var')
             if length(ax) ~= frameNum
                 frameNum = min(frameNum,length(ax));
                 [~, ~, ~] = DrawFormattedText(win, 'Auditory and visual cues have different duration! ','center',SCREEN.center(2)/2,[200 20 20]);
@@ -350,6 +362,9 @@ while trialI < trialNum+1
         end
     end
     
+    frameTime = nan(1,frameNum);
+    frameTI = GetSecs;
+    
     % start giving frames
     for framei = 1:frameNum
         [~,~,keyCode] = KbCheck;
@@ -358,7 +373,7 @@ while trialI < trialNum+1
         elseif keyCode(skipKey)
             break
         end
-        if exist(vx,'value')
+        if exist('vx','var')
             % for visual cue
             if keyCode(pageUp)
                 TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
@@ -388,7 +403,7 @@ while trialI < trialNum+1
             % draw the fixation point and 3d dots
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             
-            %% draw for right eye
+           %% draw for right eye
             glColorMask(GL.FALSE, GL.TRUE, GL.FALSE, GL.FALSE);
             glMatrixMode(GL.PROJECTION);
             glLoadIdentity;
@@ -405,8 +420,13 @@ while trialI < trialNum+1
             Screen('EndOpenGL', win);
         end
         
-        if exist(ax,'value')
+        if exist('ax','var')
             % for auditory cue
         end
+        
+        frameTime(framei) = GetSecs - frameTI;
+        frameTI = GetSecs;
     end
+    SCREEN.frameRate = round(1/nanmean(frameTime));
+    disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate)]);
 end
