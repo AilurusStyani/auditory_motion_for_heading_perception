@@ -9,6 +9,7 @@ global VISUAL
 global GL
 global FRUSTUM
 global STARDATA
+global AL
 
 subjectName = inputdlg({'Please input participant''s initials.'},'1',1);
 fileName = ['auditoryMotion_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
@@ -36,8 +37,8 @@ feedbackDuration = 1; % unit s
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 15;
-TRIALINFO.headingDegree   = {-10 -5 0 5 10};
-TRIALINFO.headingDistance = {5 10};
+TRIALINFO.headingDegree   = {-30 -15 0 15 30};
+TRIALINFO.headingDistance = {10 15};
 TRIALINFO.headingTime      = {1 2};
 TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
@@ -94,13 +95,13 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
 % % sample currently not work for double sources.
 % AUDITORY.sourceNum     = {1,2};
-% AUDITORY.sourceHeading = {180,[180 0]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-% AUDITORY.sourceDistance = {50*coordinateMuilty , [50*coordinateMuilty 60*coordinateMuilty]}; % cm
+% AUDITORY.sourceHeading = {0,[-15 30]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% AUDITORY.sourceDistance = {10*coordinateMuilty , [5*coordinateMuilty 13*coordinateMuilty]}; % cm
 % AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
 
 AUDITORY.sourceNum     = {1};
-AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
+AUDITORY.sourceHeading = {0}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceDistance = {10*coordinateMuilty}; % cm
 AUDITORY.sourceDegree = {0}; % degree for position
 
 %% trial conditions and order
@@ -159,7 +160,7 @@ whiteBackground = WhiteIndex(SCREEN.screenId);
 blackBackground = BlackIndex(SCREEN.screenId);
 
 % Open a double-buffered full-screen window on the main displays screen.
-[win , winRect] = PsychImaging('OpenWindow', SCREEN.screenId, whiteBackground);
+[win , winRect] = PsychImaging('OpenWindow', SCREEN.screenId, blackBackground);
 SCREEN.widthPix = winRect(3);
 SCREEN.heightPix = winRect(4);
 SCREEN.center = [SCREEN.widthPix/2, SCREEN.heightPix/2];
@@ -168,7 +169,7 @@ TRIALINFO.fixationSizeP = degree2pix(TRIALINFO.fixationSizeD/2);
 TRIALINFO.fixationPosition = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
-SCREEN.frameRate = SCREEN.refreshRate;
+% SCREEN.frameRate = SCREEN.refreshRate;
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
 
@@ -253,16 +254,28 @@ end
 % Initialize OpenAL subsystem at debuglevel 2 with the default output device:
 InitializeMatlabOpenAL(2);
 
+nsources = max(cell2mat(AUDITORY.sourceNum));
+
 % Generate one sound buffer:
-buffers = alGenBuffers(max(cell2mat(AUDITORY.sourceNum)));
+buffers = alGenBuffers(nsources);
 
 % Query for errors:
 alGetString(alGetError)
 
 soundFiles = dir(fullfile(pwd,'*.wav'));
 
+alListenerfv(AL.VELOCITY, [0, 0, -1]);
+alListenerfv(AL.POSITION, [0, 0, 0]);
+
+% no idea whats this code for in OSX, but just left it here
+if IsOSX
+    alcASASetListener(ALC.ASA_REVERB_ON, 1);
+    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
+end
+
 % Create a sound source:
-sources = alGenSources(max(cell2mat(AUDITORY.sourceNum)));
+sources = alGenSources(nsources);
 
 % if only one source, it will have some problem in matlab,
 if buffers == 0
@@ -272,27 +285,44 @@ if sources==0
     sources=sources+2;
 end
 
-% no idea whats this code for in OSX, but just left it here
-if IsOSX
-    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
+for i = 1:nsources
+    filei = mod(i,length(soundFiles))+1;
+    soundName = fullfile(pwd,soundFiles(filei).name);
+    
+    [myNoise,freq]= psychwavread(soundName);
+    %         myNoise = myNoise(:, 1);
+    
+    % Convert it...
+    myNoise = int16(myNoise * 32767);
+    
+    alBufferData( buffers(i), AL.FORMAT_MONO16, myNoise, length(myNoise)*2, freq);
+    
+    % Attach our buffer to it: The source will play the buffers sound data.
+    alSourceQueueBuffers(sources(i), 1, buffers(i));
+    
+    % Switch source to looping playback: It will repeat playing the buffer until its stopped.
+    alSourcei(sources(i), AL.LOOPING, AL.TRUE);
 end
 
 HideCursor(SCREEN.screenId);
 
-% Start playback for these sources:
-alSourcePlayv(length(sources), sources);
-
 %% trial start
 trialI = 1;
 while trialI < trialNum+1
+    [~, ~, keyCode]=KbCheck;
+    if keyCode(escape)
+        break
+    end
+    
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
     %       1               2               3
     %
-    % auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-    %       4               5               6                7              8                9                  10
+    % auditoryDegree auditoryDistance auditoryTime ...
+    %       4               5               6
+    %
+    % sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
+    %       7              8                9                  10
     
     conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
     visualHeadingi = cell2mat(conditioni(1:3));
@@ -300,29 +330,18 @@ while trialI < trialNum+1
     auditorySourcei = conditioni(7:10);
     
     if ~sum(isnan(visualHeadingi))
-        [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.frameRate);
+        [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
+    else
+        clear vx vy vz vfx vfy vfz
     end
     if ~sum(isnan(auditoryHeadingi))
-        [ax,ay,az,afx,afy,afz] = calMove(auditoryHeadingi,SCREEN.frameRate);
+        [ax,ay,az,~,~,~] = calMove(auditoryHeadingi,SCREEN.refreshRate);
+    else
+        clear ax ay az
     end
+
     % set auditory source
     for i = 1:auditorySourcei{1}
-        filei = mod(i,length(soundFiles))+1;
-        soundName = fullfile(pwd,soundFiles(filei).name);
-        
-        [myNoise,freq]= psychwavread(soundName);
-%         myNoise = myNoise(:, 1);
-        
-        % Convert it...
-        myNoise = int16(myNoise * 32767);
-        
-        alBufferData( buffers(i), AL.FORMAT_MONO16, myNoise, length(myNoise)*2, freq);
-        
-        % Attach our buffer to it: The source will play the buffers sound data.
-        alSourceQueueBuffers(sources(i), 1, buffers(i));
-        
-        % Switch source to looping playback: It will repeat playing the buffer until its stopped.
-        alSourcei(sources(i), AL.LOOPING, AL.TRUE);
         
         % Set emission volume to 100%, aka a gain of 1.0:
         alSourcef(sources(i), AL.GAIN, 1);
@@ -341,14 +360,15 @@ while trialI < trialNum+1
             alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
         end
     end
-    
+
     if exist('vx','var')
-        frameNum = length(vx);
+        frameNum = length(vx)-1;
     end
+    
     if exist('ax','var')
         if exist('frameNum','var')
-            if length(ax) ~= frameNum
-                frameNum = min(frameNum,length(ax));
+            if length(ax)-1 ~= frameNum
+                frameNum = min(frameNum,length(ax)-1);
                 [~, ~, ~] = DrawFormattedText(win, 'Auditory and visual cues have different duration! ','center',SCREEN.center(2)/2,[200 20 20]);
                 [~, ~, ~] = DrawFormattedText(win, 'The stimulus will be given based on shorter one!!!','center',SCREEN.center(2),[200 20 20]);
                 warning('Auditory and visual cues have different duration! The stimulus will be given based on shorter one!!!')
@@ -358,12 +378,15 @@ while trialI < trialNum+1
                 WaitSecs(1);
             end
         else
-            frameNum = length(ax);
+            frameNum = length(ax)-1;
         end
     end
     
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
+    aCurT = tic;
+    aSt = GetSecs;
+    aPosition = [0 0 0];
     
     % start giving frames
     for framei = 1:frameNum
@@ -418,15 +441,103 @@ while trialI < trialNum+1
             % draw the fixation point and 3d dots for right eye
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
+            drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            
+            Screen('Flip', win);
+        else
+            WaitSecs(0.01)
+            drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            Screen('Flip', win);
         end
         
-        if exist('ax','var')
+        if ~sum(isnan(auditoryHeadingi))
             % for auditory cue
+            if toc(aCurT) <= auditoryHeadingi(3)
+                ati = GetSecs - aSt;
+                aSt = GetSecs;
+                
+                va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
+                aPosition = aPosition + va*ati;
+                
+                alListenerfv(AL.VELOCITY, va);
+                alListenerfv(AL.POSITION, aPosition);
+                
+                if IsOSX
+                    alcASASetListener(ALC.ASA_REVERB_ON, 1);
+                    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+                    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
+                end
+                
+                if framei == 1
+                    % Start playback for these sources:
+                    alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+                end
+            end
         end
         
         frameTime(framei) = GetSecs - frameTI;
         frameTI = GetSecs;
     end
+    % Stop playback of all sources:
+    alSourceStopv(nsources, sources);
+
     SCREEN.frameRate = round(1/nanmean(frameTime));
     disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate)]);
+    if SCREEN.refreshRate > SCREEN.frameRate
+        fprintf(2,'FPS drop!!!!\n');
+    end
+    
+    trialI = trialI +1;
+    WaitSecs(TRIALINFO.intertrialInterval);
 end
+
+Screen('Flip', win);
+
+if ~testMode
+    Eyelink('StopRecording');
+    Eyelink('CloseFile');
+    try
+        fprintf('Receiving data file ''%s''\n',fileName);
+        status=Eyelink('ReceiveFile',tempName ,saveDir,1);
+        if status > 0
+            fprintf('ReceiveFile status %d\n ', status);
+        end
+        if exist(fileName, 'file')==2
+            fprintf('Data file ''%s'' can be found in '' %s\n',fileName, pwd);
+        end
+    catch
+        fprintf('Problem receiving data file ''%s''\n',fileName);
+    end
+    
+    cd (saveDir);
+    save(fullfile(saveDir,fileName));
+    movefile([saveDir,'\',tempName,'.edf'],[saveDir,'\',fileName,'.edf']);
+    
+    % shut down the eyelink
+    Eyelink('ShutDown');
+end
+
+for i=1:nsources
+    % Unqueue sound buffer:
+    alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+end
+
+% Wait a bit:
+WaitSecs(0.1);
+
+% Delete buffer:
+alDeleteBuffers(nsources, buffers);
+
+% Wait a bit:
+WaitSecs(0.1);
+
+% Delete sources:
+alDeleteSources(nsources, sources);
+
+% Wait a bit:
+WaitSecs(0.1);
+
+% Shutdown OpenAL:
+CloseOpenAL;
+
+Screen('CloseAll');

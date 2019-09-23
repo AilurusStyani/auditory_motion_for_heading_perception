@@ -3,7 +3,7 @@ degree = condition(1);
 distance = condition(2);
 time = condition(3);
 
-frameNum = time * refreshRate;
+frameNum = time * refreshRate+1;
 
 x = (1:frameNum)/frameNum*distance*sind(degree);
 y = (1:frameNum)*0;
