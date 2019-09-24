@@ -40,7 +40,7 @@ TRIALINFO.repetition      = 15;
 TRIALINFO.headingDegree   = {-30 -15 0 15 30};
 TRIALINFO.headingDistance = {10 15};
 TRIALINFO.headingTime      = {1 2};
-TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
@@ -180,6 +180,8 @@ glColorMask(GL.TRUE, GL.TRUE, GL.TRUE, GL.TRUE);
 % glEnable(GL_ALPHA_BLEND_CORRECTLY);
 % glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 Screen('EndOpenGL', win);
+Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]);
+Screen('BlendFunction', win, GL_ONE, GL_ZERO);
 
 GenerateStarField();
 
@@ -264,8 +266,9 @@ alGetString(alGetError)
 
 soundFiles = dir(fullfile(pwd,'*.wav'));
 
-alListenerfv(AL.VELOCITY, [0, 0, -1]);
+alListenerfv(AL.VELOCITY, [0, 0,-1]);
 alListenerfv(AL.POSITION, [0, 0, 0]);
+alListenerfv(AL.ORIENTATION,[0 1 0]);
 
 % no idea whats this code for in OSX, but just left it here
 if IsOSX
@@ -284,7 +287,6 @@ end
 if sources==0
     sources=sources+2;
 end
-
 for i = 1:nsources
     filei = mod(i,length(soundFiles))+1;
     soundName = fullfile(pwd,soundFiles(filei).name);
@@ -302,9 +304,18 @@ for i = 1:nsources
     
     % Switch source to looping playback: It will repeat playing the buffer until its stopped.
     alSourcei(sources(i), AL.LOOPING, AL.TRUE);
+    
+    % Set emission volume to 100%, aka a gain of 1.0:
+    alSourcef(sources(i), AL.GAIN, 1);
+    
+    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
+    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
 end
-
 HideCursor(SCREEN.screenId);
+
+choice = zeros(trialNum,1);
+choiceTime = nan(trialNum,1);
+conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2));
 
 %% trial start
 trialI = 1;
@@ -342,12 +353,6 @@ while trialI < trialNum+1
 
     % set auditory source
     for i = 1:auditorySourcei{1}
-        
-        % Set emission volume to 100%, aka a gain of 1.0:
-        alSourcef(sources(i), AL.GAIN, 1);
-        
-        alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
-        alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
         alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
         
         alSource3f(sources(i), AL.POSITION, auditorySourcei{2}(i)*sind(auditorySourcei{3}(i)), 0, -auditorySourcei{2}(i)*cosd(auditorySourcei{3}(i)));
@@ -360,22 +365,19 @@ while trialI < trialNum+1
             alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
         end
     end
-
+    
+    % delete the frameNum from last trial
+    clear frameNum
+    
     if exist('vx','var')
+        length(vx)
         frameNum = length(vx)-1;
     end
-    
+
     if exist('ax','var')
         if exist('frameNum','var')
             if length(ax)-1 ~= frameNum
                 frameNum = min(frameNum,length(ax)-1);
-                [~, ~, ~] = DrawFormattedText(win, 'Auditory and visual cues have different duration! ','center',SCREEN.center(2)/2,[200 20 20]);
-                [~, ~, ~] = DrawFormattedText(win, 'The stimulus will be given based on shorter one!!!','center',SCREEN.center(2),[200 20 20]);
-                warning('Auditory and visual cues have different duration! The stimulus will be given based on shorter one!!!')
-                Screen('TextBackgroundColor',win, [0 0 0 0]);
-                Screen('DrawingFinished',win);
-                Screen('Flip',win,0,0);
-                WaitSecs(1);
             end
         else
             frameNum = length(ax)-1;
@@ -445,7 +447,7 @@ while trialI < trialNum+1
             
             Screen('Flip', win);
         else
-            WaitSecs(0.01)
+            WaitSecs(0.013);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
         end
@@ -461,13 +463,13 @@ while trialI < trialNum+1
                 
                 alListenerfv(AL.VELOCITY, va);
                 alListenerfv(AL.POSITION, aPosition);
+                alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
                 
                 if IsOSX
                     alcASASetListener(ALC.ASA_REVERB_ON, 1);
                     alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
                     alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
                 end
-                
                 if framei == 1
                     % Start playback for these sources:
                     alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
@@ -478,18 +480,89 @@ while trialI < trialNum+1
         frameTime(framei) = GetSecs - frameTI;
         frameTI = GetSecs;
     end
+    
     % Stop playback of all sources:
-    alSourceStopv(nsources, sources);
+    alSourceStopv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
 
     SCREEN.frameRate = round(1/nanmean(frameTime));
     disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate)]);
-    if SCREEN.refreshRate > SCREEN.frameRate
+    if SCREEN.refreshRate*0.95 > SCREEN.frameRate
         fprintf(2,'FPS drop!!!!\n');
     end
     
-    trialI = trialI +1;
+    %% start choice
+    correctAnswer = (auditoryHeadingi(1) >=0)+1;
+    startChoice = tic;
+    [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
+    Screen('TextBackgroundColor',win, [0 0 0 0]);
+    Screen('DrawingFinished',win);
+    Screen('Flip',win,0,0);
+    while toc(startChoice) <= TRIALINFO.choicePeriod
+        [ ~, ~, keyCode ] = KbCheck;
+        if keyCode(leftKey)
+            choice(trialI) = 1;
+            choiceTime(trialI) = toc(startChoice);
+        elseif keyCode(rightKey)
+            choice(trialI) = 2;
+            choiceTime(trialI) = toc(startChoice);
+        end
+        if choice(trialI)
+            break
+        end
+    end
+    if feedback
+        if choice(trialI) == correctAnswer
+            sound(sin(2*pi*25*(1:3000)/200)); % correct cue
+            [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
+            if ~testMode
+                Eyelink('message', ['Decision made ' num2str(trialI)]);
+            end
+        elseif choice(trialI)
+            sound(sin(2*pi*25*(1:3000)/600)); % wrong cue
+            [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
+            if ~testMode
+                Eyelink('message', ['Decision made ' num2str(trialI)]);
+            end
+        else
+            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+            [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
+            if ~testMode
+                Eyelink('message', ['Missing ' num2str(trialI)]);
+            end
+        end
+        Screen('TextBackgroundColor',win, [0 0 0 0]);
+        Screen('DrawingFinished',win);
+        Screen('Flip',win,0,0);
+        WaitSecs(feedbackDuration);
+    else
+        if choice(trialI)
+            sound(sin(2*pi*25*(1:3000)/200)); % response cue
+            if ~testMode
+                Eyelink('message', ['Decision made ' num2str(trialI)]);
+            end
+        else
+            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+            if ~testMode
+                Eyelink('message', ['Missing ' num2str(trialI)]);
+            end
+        end
+    end
+    if choice(trialI)
+        conditionIndex(trialI,:) = conditioni;
+        if ~testMode
+            Eyelink('message', ['Trial complete ' num2str(trialI)]);
+        end
+        trialI = trialI +1;
+    else
+        trialOrder = [trialOrder trialOrder(trialI)];
+        trialOrder(trialI) = [];
+        if ~testMode
+            Eyelink('message', ['Trial repeat ' num2str(trialI)]);
+        end
+    end
     WaitSecs(TRIALINFO.intertrialInterval);
 end
+
 
 Screen('Flip', win);
 
@@ -540,4 +613,7 @@ WaitSecs(0.1);
 % Shutdown OpenAL:
 CloseOpenAL;
 
+% save result
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL')
 Screen('CloseAll');
+cd(curdir);
