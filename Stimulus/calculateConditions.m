@@ -1,6 +1,7 @@
 function calculateConditions()
 % {visualDegree visualDistance visualTime, ...
-% auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
+% auditoryDegree auditoryDistance auditoryTime,...
+% sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
 
 global TRIALINFO
 global AUDITORY

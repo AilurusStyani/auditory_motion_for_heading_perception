@@ -36,11 +36,11 @@ feedbackDuration = 1; % unit s
 
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
-TRIALINFO.repetition      = 15;
-TRIALINFO.headingDegree   = {-30 -15 0 15 30};
-TRIALINFO.headingDistance = {10 15};
-TRIALINFO.headingTime      = {1 2};
-TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.repetition      = 10;
+TRIALINFO.headingDegree   = {-25 -5  5 25};
+TRIALINFO.headingDistance = {50};
+TRIALINFO.headingTime      = {2};
+TRIALINFO.stimulusType     = [2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
@@ -78,12 +78,13 @@ VISUAL.fixationSizeD  = 0.25;  % degree
 VISUAL.fixationWindow = 2; % degree
 
 VISUAL.density   = 1000/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
-VISUAL.coherence = 100; % in percent
+VISUAL.coherence = 0.3; % in percent
+VISUAL.probability = VISUAL.coherence;
 VISUAL.lifeTime  = 3; % frame number
 
-VISUAL.dimensionX = 400*coordinateMuilty;  % cm
-VISUAL.dimensionY = 400*coordinateMuilty;  % cm
-VISUAL.dimensionZ = 700*coordinateMuilty;  % cm
+VISUAL.dimensionX = 100*coordinateMuilty;  % cm
+VISUAL.dimensionY = 100*coordinateMuilty;  % cm
+VISUAL.dimensionZ = 300*coordinateMuilty;  % cm
 VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
@@ -99,10 +100,11 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceDistance = {10*coordinateMuilty , [5*coordinateMuilty 13*coordinateMuilty]}; % cm
 % AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
 
-AUDITORY.sourceNum     = {1};
-AUDITORY.sourceHeading = {0}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {10*coordinateMuilty}; % cm
-AUDITORY.sourceDegree = {0}; % degree for position
+AUDITORY.sourceNum     = {1,1};
+AUDITORY.sourceHeading = {180,180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
+AUDITORY.sourceDistance = {30*coordinateMuilty,30*coordinateMuilty}; % cm
+AUDITORY.sourceDegree = {15,-15}; % degree for position
 
 %% trial conditions and order
 calculateConditions();
@@ -268,7 +270,7 @@ soundFiles = dir(fullfile(pwd,'*.wav'));
 
 alListenerfv(AL.VELOCITY, [0, 0,-1]);
 alListenerfv(AL.POSITION, [0, 0, 0]);
-alListenerfv(AL.ORIENTATION,[0 1 0]);
+alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
 
 % no idea whats this code for in OSX, but just left it here
 if IsOSX
@@ -287,6 +289,7 @@ end
 if sources==0
     sources=sources+2;
 end
+
 for i = 1:nsources
     filei = mod(i,length(soundFiles))+1;
     soundName = fullfile(pwd,soundFiles(filei).name);
@@ -308,14 +311,15 @@ for i = 1:nsources
     % Set emission volume to 100%, aka a gain of 1.0:
     alSourcef(sources(i), AL.GAIN, 1);
     
-    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
-    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
+    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 30);
+    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 270);
 end
+
 HideCursor(SCREEN.screenId);
 
-choice = zeros(trialNum,1);
-choiceTime = nan(trialNum,1);
-conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2));
+choice = zeros(trialNum,2);
+choiceTime = nan(trialNum,2);
+conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
 
 %% trial start
 trialI = 1;
@@ -384,20 +388,50 @@ while trialI < trialNum+1
         end
     end
     
+    aPosition = [0 0 0];
+    va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
+        0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
+    alListenerfv(AL.VELOCITY, va);
+    alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
+    alListenerfv(AL.POSITION, aPosition);
+    alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
     aCurT = tic;
     aSt = GetSecs;
-    aPosition = [0 0 0];
+    
     
     % start giving frames
     for framei = 1:frameNum
+        modifyStarField();
+        if mod(framei,VISUAL.lifeTime)==0
+            GenerateStarField();
+        end
         [~,~,keyCode] = KbCheck;
         if keyCode(escape)
             break
         elseif keyCode(skipKey)
             break
         end
+        
+        if ~sum(isnan(auditoryHeadingi))
+            % for auditory cue
+            if toc(aCurT) <= auditoryHeadingi(3)
+                ati = GetSecs - aSt;
+                aSt = GetSecs;
+                
+                aPosition = aPosition + va*ati;
+                alListenerfv(AL.POSITION, aPosition);
+                
+                if IsOSX
+                    alcASASetListener(ALC.ASA_REVERB_ON, 1);
+                    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+                    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
+                end
+            end
+        end
+        
         if exist('vx','var')
             % for visual cue
             if keyCode(pageUp)
@@ -447,34 +481,9 @@ while trialI < trialNum+1
             
             Screen('Flip', win);
         else
-            WaitSecs(0.013);
+            WaitSecs(0.01);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
-        end
-        
-        if ~sum(isnan(auditoryHeadingi))
-            % for auditory cue
-            if toc(aCurT) <= auditoryHeadingi(3)
-                ati = GetSecs - aSt;
-                aSt = GetSecs;
-                
-                va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
-                aPosition = aPosition + va*ati;
-                
-                alListenerfv(AL.VELOCITY, va);
-                alListenerfv(AL.POSITION, aPosition);
-                alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-                
-                if IsOSX
-                    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-                    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-                    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
-                end
-                if framei == 1
-                    % Start playback for these sources:
-                    alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
-                end
-            end
         end
         
         frameTime(framei) = GetSecs - frameTI;
@@ -500,31 +509,31 @@ while trialI < trialNum+1
     while toc(startChoice) <= TRIALINFO.choicePeriod
         [ ~, ~, keyCode ] = KbCheck;
         if keyCode(leftKey)
-            choice(trialI) = 1;
-            choiceTime(trialI) = toc(startChoice);
+            choice(trialI,:) = [1,trialI];
+            choiceTime(trialI,:) = [toc(startChoice),trialI];
         elseif keyCode(rightKey)
-            choice(trialI) = 2;
-            choiceTime(trialI) = toc(startChoice);
+            choice(trialI,:) = [2,trialI];
+            choiceTime(trialI,:) = [toc(startChoice),trialI];
         end
-        if choice(trialI)
+        if choice(trialI,1)
             break
         end
     end
     if feedback
-        if choice(trialI) == correctAnswer
-            sound(sin(2*pi*25*(1:3000)/200)); % correct cue
+        if choice(trialI,1) == correctAnswer
+            sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
             [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
             if ~testMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
-        elseif choice(trialI)
-            sound(sin(2*pi*25*(1:3000)/600)); % wrong cue
+        elseif choice(trialI,1)
+            sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
             [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
             if ~testMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         else
-            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+            sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
             [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
             if ~testMode
                 Eyelink('message', ['Missing ' num2str(trialI)]);
@@ -535,20 +544,20 @@ while trialI < trialNum+1
         Screen('Flip',win,0,0);
         WaitSecs(feedbackDuration);
     else
-        if choice(trialI)
-            sound(sin(2*pi*25*(1:3000)/200)); % response cue
+        if choice(trialI,1)
+            sound(0.2*sin(2*pi*25*(1:3000)/200)); % response cue
             if ~testMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         else
-            sound(sin(2*pi*25*(1:3000)/600)); % missing cue
+            sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
             if ~testMode
                 Eyelink('message', ['Missing ' num2str(trialI)]);
             end
         end
     end
-    if choice(trialI)
-        conditionIndex(trialI,:) = conditioni;
+    if choice(trialI,1)
+        conditionIndex(trialI,:) = [conditioni,trialI];
         if ~testMode
             Eyelink('message', ['Trial complete ' num2str(trialI)]);
         end
