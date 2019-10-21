@@ -251,7 +251,7 @@ if ~testMode
     end
     
     calibrateCkeck = tic;
-    WaitSecs(1); % wait a little bit, in case the key press during calibration influence the following keyboard check
+    pause(1); % wait a little bit, in case the key press during calibration influence the following keyboard check
 end
 
 %% initial openal
@@ -481,7 +481,7 @@ while trialI < trialNum+1
             
             Screen('Flip', win);
         else
-            WaitSecs(0.01);
+            pause(0.01);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
         end
@@ -542,7 +542,7 @@ while trialI < trialNum+1
         Screen('TextBackgroundColor',win, [0 0 0 0]);
         Screen('DrawingFinished',win);
         Screen('Flip',win,0,0);
-        WaitSecs(feedbackDuration);
+        pause(feedbackDuration);
     else
         if choice(trialI,1)
             sound(0.2*sin(2*pi*25*(1:3000)/200)); % response cue
@@ -569,7 +569,7 @@ while trialI < trialNum+1
             Eyelink('message', ['Trial repeat ' num2str(trialI)]);
         end
     end
-    WaitSecs(TRIALINFO.intertrialInterval);
+    pause(TRIALINFO.intertrialInterval);
 end
 
 
@@ -605,19 +605,19 @@ for i=1:nsources
 end
 
 % Wait a bit:
-WaitSecs(0.1);
+pause(0.1);
 
 % Delete buffer:
 alDeleteBuffers(nsources, buffers);
 
 % Wait a bit:
-WaitSecs(0.1);
+pause(0.1);
 
 % Delete sources:
 alDeleteSources(nsources, sources);
 
 % Wait a bit:
-WaitSecs(0.1);
+pause(0.1);
 
 % Shutdown OpenAL:
 CloseOpenAL;
