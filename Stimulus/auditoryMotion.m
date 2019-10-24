@@ -11,7 +11,10 @@ global FRUSTUM
 global STARDATA
 global AL
 
-subjectName = inputdlg({'Please input participant''s initials.'},'1',1);
+subjectName = inputdlg({'Please input participant''s initials.'},'Subject Name',1,{''},'on');
+if isempty(subjectName)
+    return
+end
 fileName = ['auditoryMotion_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
 saveDir = fullfile(pwd,'data');
 mkdir(saveDir);
