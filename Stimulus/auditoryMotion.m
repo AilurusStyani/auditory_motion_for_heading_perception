@@ -41,9 +41,9 @@ feedbackDuration = 1; % unit s
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
 TRIALINFO.headingDegree   = {-25 -5  5 25};
-TRIALINFO.headingDistance = {50};
-TRIALINFO.headingTime      = {2};
-TRIALINFO.stimulusType     = [2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.headingDistance = {100};
+TRIALINFO.headingTime      = {2}; % second
+TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
@@ -103,11 +103,17 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceDistance = {10*coordinateMuilty , [5*coordinateMuilty 13*coordinateMuilty]}; % cm
 % AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
 
-AUDITORY.sourceNum     = {1,1};
-AUDITORY.sourceHeading = {180,180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% AUDITORY.sourceNum     = {1,1};
+% AUDITORY.sourceHeading = {180,180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% % AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
+% AUDITORY.sourceDistance = {30*coordinateMuilty,30*coordinateMuilty}; % cm
+% AUDITORY.sourceDegree = {15,-15}; % degree for position
+
+AUDITORY.sourceNum     = {1};
+AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
 % AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
-AUDITORY.sourceDistance = {30*coordinateMuilty,30*coordinateMuilty}; % cm
-AUDITORY.sourceDegree = {15,-15}; % degree for position
+AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
+AUDITORY.sourceDegree = {0}; % degree for position
 
 %% trial conditions and order
 calculateConditions();
@@ -362,7 +368,7 @@ while trialI < trialNum+1
     for i = 1:auditorySourcei{1}
         alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
         
-        alSource3f(sources(i), AL.POSITION, auditorySourcei{2}(i)*sind(auditorySourcei{3}(i)), 0, -auditorySourcei{2}(i)*cosd(auditorySourcei{3}(i)));
+        alSource3f(sources(i), AL.POSITION, auditorySourcei{3}(i)*sind(auditorySourcei{2}(i)), 0, -auditorySourcei{3}(i)*cosd(auditorySourcei{2}(i)));
         
         % Sources themselves remain static in space:
         alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
