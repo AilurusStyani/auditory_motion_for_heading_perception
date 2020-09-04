@@ -41,9 +41,9 @@ feedbackDuration = 1; % unit s
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
 TRIALINFO.headingDegree   = {-25 -5  5 25};
-TRIALINFO.headingDistance = {100};
+TRIALINFO.headingDistance = {50};
 TRIALINFO.headingTime      = {2}; % second
-TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.initialPeriod       = 1; % second
 TRIALINFO.choicePeriod        = 2; % second
@@ -56,17 +56,6 @@ TRIALINFO.fixationSizeD      = 0.25; % degree
 TRIALINFO.intergration = [1];
 
 % for SCREEN
-if testMode
-    %     %     SCREEN.widthCM = 34.5*coordinateMuilty; % cm, need to be measured on your own PC
-    %     %     SCREEN.heightCM = 19.7*coordinateMuilty; % cm, need to be measured on your own PC
-    SCREEN.widthCM = 37.5*coordinateMuilty; % cm, need to be measured on your own PC
-    SCREEN.heightCM = 30*coordinateMuilty; % cm, need to be measured on your own PC
-    %     SCREEN.widthCM = 52.4*coordinateMuilty; % cm, need to measure in your own PC
-    %     SCREEN.heightCM = 29.4*coordinateMuilty; % cm, need to measure in your own PC
-else
-    SCREEN.widthCM = 120*coordinateMuilty; % cm
-    SCREEN.heightCM = 65*coordinateMuilty; % cm
-end
 SCREEN.distance = 60*coordinateMuilty;% cm
 
 TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
@@ -85,9 +74,9 @@ VISUAL.coherence = 0.3; % in percent
 VISUAL.probability = VISUAL.coherence;
 VISUAL.lifeTime  = 3; % frame number
 
-VISUAL.dimensionX = 100*coordinateMuilty;  % cm
-VISUAL.dimensionY = 100*coordinateMuilty;  % cm
-VISUAL.dimensionZ = 300*coordinateMuilty;  % cm
+VISUAL.dimensionX = 200*coordinateMuilty;  % cm
+VISUAL.dimensionY = 80*coordinateMuilty;  % cm
+VISUAL.dimensionZ = 200*coordinateMuilty;  % cm
 VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
@@ -103,17 +92,17 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceDistance = {10*coordinateMuilty , [5*coordinateMuilty 13*coordinateMuilty]}; % cm
 % AUDITORY.sourceDegree = {0 , [-10 10]}; % degree
 
-% AUDITORY.sourceNum     = {1,1};
-% AUDITORY.sourceHeading = {180,180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-% % AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
-% AUDITORY.sourceDistance = {30*coordinateMuilty,30*coordinateMuilty}; % cm
-% AUDITORY.sourceDegree = {15,-15}; % degree for position
-
-AUDITORY.sourceNum     = {1};
-AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceNum     = {1,1};
+AUDITORY.sourceHeading = {180,180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
 % AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
-AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
-AUDITORY.sourceDegree = {0}; % degree for position
+AUDITORY.sourceDistance = {30*coordinateMuilty,30*coordinateMuilty}; % cm
+AUDITORY.sourceDegree = {15,-15}; % degree for position
+
+% AUDITORY.sourceNum     = {1};
+% AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% % AUDITORY.sourceDistance = {50*coordinateMuilty,50*coordinateMuilty}; % cm
+% AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
+% AUDITORY.sourceDegree = {0}; % degree for position
 
 %% trial conditions and order
 calculateConditions();
@@ -136,8 +125,9 @@ fprintf(1,'This block will cost  ');
 fprintf(2,[num2str(timePredicted/60) ' '] );
 fprintf(1,'minutes \n');
 
-calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
-automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
+% auto-calibrate for Eyelink, temporarily not used
+% calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
+% automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
 disp('Continue?')
 
 % terminate the block if you feel it is too long
@@ -175,6 +165,10 @@ blackBackground = BlackIndex(SCREEN.screenId);
 SCREEN.widthPix = winRect(3);
 SCREEN.heightPix = winRect(4);
 SCREEN.center = [SCREEN.widthPix/2, SCREEN.heightPix/2];
+
+[width, height] = Screen('DisplaySize', SCREEN.screenId);
+SCREEN.widthCM = width/10; % mm to cm
+SCREEN.heightCM = height/10; % mm to cm
 
 TRIALINFO.fixationSizeP = degree2pix(TRIALINFO.fixationSizeD/2);
 TRIALINFO.fixationPosition = [SCREEN.widthPix/2,SCREEN.heightPix/2];
