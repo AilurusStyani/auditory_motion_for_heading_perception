@@ -510,7 +510,17 @@ while trialI < trialNum+1
     end
     
     %% start choice
-    correctAnswer = (auditoryHeadingi(1) >=0)+1;
+    if soundPresent
+        correctAnswer = (auditoryHeadingi(1) >0)+1;
+        if auditoryHeadingi(1) == 0
+           correctAnswer = randi(1)-1;
+        end
+    else
+        correctAnswer = (visualHeadingi(1) >0)+1;
+        if visualHeadingi(1) == 0
+           correctAnswer = randi(1)-1;
+        end
+    end
     startChoice = tic;
     [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
     Screen('TextBackgroundColor',win, [0 0 0 0]);
