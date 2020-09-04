@@ -346,6 +346,7 @@ while trialI < trialNum+1
     visualHeadingi = cell2mat(conditioni(1:3));
     auditoryHeadingi = cell2mat(conditioni(4:6));
     auditorySourcei = conditioni(7:10);
+    soundPresent = ~isnan(auditorySourcei{end}(i));
     
     if ~sum(isnan(visualHeadingi))
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
@@ -357,19 +358,21 @@ while trialI < trialNum+1
     else
         clear ax ay az
     end
-
+    
     % set auditory source
-    for i = 1:auditorySourcei{1}
-        alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
-        
-        alSource3f(sources(i), AL.POSITION, auditorySourcei{3}(i)*sind(auditorySourcei{2}(i)), 0, -auditorySourcei{3}(i)*cosd(auditorySourcei{2}(i)));
-        
-        % Sources themselves remain static in space:
-        alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
-        
-        if IsOSX
-            % Source emits some sound that gets reverbrated in room:
-            alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
+    if soundPresent
+        for i = 1:auditorySourcei{1}
+            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+            
+            alSource3f(sources(i), AL.POSITION, auditorySourcei{3}(i)*sind(auditorySourcei{2}(i)), 0, -auditorySourcei{3}(i)*cosd(auditorySourcei{2}(i)));
+            
+            % Sources themselves remain static in space:
+            alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
+            
+            if IsOSX
+                % Source emits some sound that gets reverbrated in room:
+                alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
+            end
         end
     end
     
@@ -397,7 +400,9 @@ while trialI < trialNum+1
     alListenerfv(AL.VELOCITY, va);
     alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
     alListenerfv(AL.POSITION, aPosition);
-    alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    if soundPresent
+        alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    end
     
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
@@ -494,7 +499,9 @@ while trialI < trialNum+1
     end
     
     % Stop playback of all sources:
-    alSourceStopv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    if soundPresent
+        alSourceStopv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    end
 
     SCREEN.frameRate = round(1/nanmean(frameTime));
     disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate)]);
@@ -604,20 +611,29 @@ end
 
 for i=1:nsources
     % Unqueue sound buffer:
-    alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+    try
+        alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+    catch
+    end
 end
 
 % Wait a bit:
 pause(0.1);
 
 % Delete buffer:
-alDeleteBuffers(nsources, buffers);
+try
+    alDeleteBuffers(nsources, buffers);
+catch
+end
 
 % Wait a bit:
 pause(0.1);
 
 % Delete sources:
-alDeleteSources(nsources, sources);
+try
+    alDeleteSources(nsources, sources);
+catch
+end
 
 % Wait a bit:
 pause(0.1);
