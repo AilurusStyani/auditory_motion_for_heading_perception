@@ -314,8 +314,8 @@ for i = 1:nsources
     % Set emission volume to 100%, aka a gain of 1.0:
     alSourcef(sources(i), AL.GAIN, 1);
     
-    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 30);
-    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 270);
+    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
+    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
 end
 
 HideCursor(SCREEN.screenId);
