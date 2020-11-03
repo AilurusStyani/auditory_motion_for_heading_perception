@@ -513,12 +513,12 @@ while trialI < trialNum+1
     if soundPresent
         correctAnswer = (auditoryHeadingi(1) >0)+1;
         if auditoryHeadingi(1) == 0
-           correctAnswer = randi(1)-1;
+           correctAnswer = randi(2)-1;
         end
     else
         correctAnswer = (visualHeadingi(1) >0)+1;
         if visualHeadingi(1) == 0
-           correctAnswer = randi(1)-1;
+           correctAnswer = randi(2)-1;
         end
     end
     startChoice = tic;
@@ -541,13 +541,13 @@ while trialI < trialNum+1
     end
     if feedback
         if choice(trialI,1) == correctAnswer
-            sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
+            % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
             [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
             if ~testMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         elseif choice(trialI,1)
-            sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
+            % sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
             [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
             if ~testMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
