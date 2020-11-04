@@ -16,7 +16,7 @@ if totalModifyDots>1
         if probability < rand()
             baseX=rand()*dimensionX-dimensionX/2.0;
             baseY=rand()*dimensionY-dimensionY/2.0;
-            baseZ=rand()*dimensionZ-dimensionZ/4.0*3.0;
+            baseZ=rand()*dimensionZ-dimensionZ;
       
             %Vertex1
             Vertex1X=baseX - size/2.0;

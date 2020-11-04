@@ -43,7 +43,7 @@ feedbackDuration = 1; % unit s
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
-TRIALINFO.headingDegree   = {-4 -1 1 4};
+TRIALINFO.headingDegree   = {-10 -5 -1 1 5 10};
 TRIALINFO.headingDistance = {30};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
@@ -90,6 +90,10 @@ AUDITORY.sourceNum     = {1};
 AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
 AUDITORY.sourceDistance = {[10*coordinateMuilty,30*coordinateMuilty]}; % cm
 AUDITORY.sourceDegree = {[-4,4]}; % degree for position
+AUDITORY.sourceLifeTimeSplit = 3;
+
+% random seed
+seed = rng('shuffle');
 
 %% trial conditions and order
 calculateConditions();
@@ -169,6 +173,7 @@ VISUAL.dimensionY = SCREEN.widthCM/SCREEN.distance*FRUSTUM.clipFar;
 
 [VISUAL.dimensionX, VISUAL.dimensionZ] = generateDimensionField(AUDITORY.headingDistance,...
                         VISUAL.headingDegree,FRUSTUM.checkLeft,FRUSTUM.checkRight,FRUSTUM.clipFar);
+auditoryLifetimeF = calculateAuditoryLifetime(AUDITORY.headingTime,AUDITORY.sourceLifeTimeSplit,SCREEN.refreshRate);
 
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
@@ -326,26 +331,27 @@ while trialI < trialNum+1
     
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
-    %       1               2               3
+    %       1                           2                        3
     %
     % auditoryDegree auditoryDistance auditoryTime ...
-    %       4               5               6
+    %       4                                   5                           6
     %
     % sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-    %       7              8                9                  10
+    %       7                      8                                  9                         10
     
     conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
     visualHeadingi = cell2mat(conditioni(1:3));
     auditoryHeadingi = cell2mat(conditioni(4:6));
     auditorySourcei = conditioni(7:10);
+    visualPresent = ~any(isnan(visualHeadingi));
     soundPresent = ~isnan(auditorySourcei{end}(i));
     
-    if ~sum(isnan(visualHeadingi))
+    if visualPresent
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
     else
         clear vx vy vz vfx vfy vfz
     end
-    if ~sum(isnan(auditoryHeadingi))
+    if soundPresent
         [ax,ay,az,~,~,~] = calMove(auditoryHeadingi,SCREEN.refreshRate);
     else
         clear ax ay az
@@ -356,7 +362,9 @@ while trialI < trialNum+1
         for i = 1:auditorySourcei{1}
             alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
             
-            alSource3f(sources(i), AL.POSITION, auditorySourcei{3}(i)*sind(auditorySourcei{2}(i)), 0, -auditorySourcei{3}(i)*cosd(auditorySourcei{2}(i)));
+            zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}))
+            xLim = sort(round(ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})))
+            alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
             
             % Sources themselves remain static in space:
             alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
@@ -371,12 +379,12 @@ while trialI < trialNum+1
     % delete the frameNum from last trial
     clear frameNum
     
-    if exist('vx','var')
+    if visualPresent
         length(vx)
         frameNum = length(vx)-1;
     end
 
-    if exist('ax','var')
+    if soundPresent
         if exist('frameNum','var')
             if length(ax)-1 ~= frameNum
                 frameNum = min(frameNum,length(ax)-1);
@@ -408,6 +416,25 @@ while trialI < trialNum+1
         if mod(framei,VISUAL.lifeTime)==0
             GenerateStarField();
         end
+        if soundPresent
+            if mod(framei,auditoryLifetimeF)==0
+                for i = 1:auditorySourcei{1}
+                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+                    
+                    zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}))
+                    xLim = sort(round(ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})))
+                    alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
+                    
+                    % Sources themselves remain static in space:
+                    alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
+                    
+                    if IsOSX
+                        % Source emits some sound that gets reverbrated in room:
+                        alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
+                    end
+                end
+            end
+        end
         [~,~,keyCode] = KbCheck;
         if keyCode(escape)
             break
@@ -415,7 +442,7 @@ while trialI < trialNum+1
             break
         end
         
-        if ~sum(isnan(auditoryHeadingi))
+        if soundPresent
             % for auditory cue
             if toc(aCurT) <= auditoryHeadingi(3)
                 ati = GetSecs - aSt;
@@ -432,7 +459,7 @@ while trialI < trialNum+1
             end
         end
         
-        if exist('vx','var')
+        if visualPresent
             % for visual cue
             if keyCode(pageUp)
                 TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
@@ -478,10 +505,9 @@ while trialI < trialNum+1
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
-            
             Screen('Flip', win);
+            
         else
-            pause(0.01);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
         end
@@ -489,6 +515,7 @@ while trialI < trialNum+1
         frameTime(framei) = GetSecs - frameTI;
         frameTI = GetSecs;
     end
+    
     
     % Stop playback of all sources:
     if soundPresent
@@ -644,6 +671,6 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL')
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed')
 Screen('CloseAll');
 cd(curdir);

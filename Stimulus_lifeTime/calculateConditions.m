@@ -15,7 +15,7 @@ inteCondition0 = {};
 if any(ismember(TRIALINFO.intergration,0))
     audiCon = cell(length(AUDITORY.sourceNum),4);
     for i=1:length(AUDITORY.sourceNum)
-        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree{i},AUDITORY.sourceDistance{i},AUDITORY.sourceHeading{i}};
+        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree(i),AUDITORY.sourceDistance(i),AUDITORY.sourceHeading{i}};
     end
     con0AtS = [sortrows(repmat(AUDITORY.headingTime',size(audiCon,1),1)),...
         repmat(audiCon,length(AUDITORY.headingTime),1)];
@@ -56,7 +56,7 @@ inteCondition1 = {};
 if any(ismember(TRIALINFO.intergration,1))
     audiCon = cell(length(AUDITORY.sourceNum),4);
     for i=1:length(AUDITORY.sourceNum)
-        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree{i},AUDITORY.sourceDistance{i},AUDITORY.sourceHeading{i}};
+        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree(i),AUDITORY.sourceDistance(i),AUDITORY.sourceHeading{i}};
     end
     con1AtS = [sortrows(repmat(TRIALINFO.headingTime',size(audiCon,1),1)),...
         repmat(audiCon,length(TRIALINFO.headingTime),1)];
