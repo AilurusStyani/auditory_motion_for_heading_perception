@@ -43,7 +43,7 @@ feedbackDuration = 1; % unit s
 %% parameters
 coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
-TRIALINFO.headingDegree   = {-10 -5 -1 1 5 10};
+TRIALINFO.headingDegree   = {-45 -30 -5 5};
 TRIALINFO.headingDistance = {30};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
@@ -309,7 +309,7 @@ for i = 1:nsources
     alSourcei(sources(i), AL.LOOPING, AL.TRUE);
     
     % Set emission volume to 100%, aka a gain of 1.0:
-    alSourcef(sources(i), AL.GAIN, 1);
+    alSourcef(sources(i), AL.GAIN, 3);
     
     alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
     alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
@@ -362,8 +362,8 @@ while trialI < trialNum+1
         for i = 1:auditorySourcei{1}
             alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
             
-            zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}))
-            xLim = sort(round(ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})))
+            zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}));
+            xLim = sort(round(ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})));
             alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
             
             % Sources themselves remain static in space:
@@ -394,12 +394,11 @@ while trialI < trialNum+1
         end
     end
     
-    aPosition = [0 0 0];
     va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
         0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
     alListenerfv(AL.VELOCITY, va);
     alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-    alListenerfv(AL.POSITION, aPosition);
+    alListenerfv(AL.POSITION, [0 0 0]);
     if soundPresent
         alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
     end
@@ -421,8 +420,8 @@ while trialI < trialNum+1
                 for i = 1:auditorySourcei{1}
                     alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
                     
-                    zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}))
-                    xLim = sort(round(ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})))
+                    zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}));
+                    xLim = sort(round(ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})));
                     alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
                     
                     % Sources themselves remain static in space:
@@ -444,18 +443,12 @@ while trialI < trialNum+1
         
         if soundPresent
             % for auditory cue
-            if toc(aCurT) <= auditoryHeadingi(3)
-                ati = GetSecs - aSt;
-                aSt = GetSecs;
-                
-                aPosition = aPosition + va*ati;
-                alListenerfv(AL.POSITION, aPosition);
-                
-                if IsOSX
-                    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-                    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-                    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
-                end
+            alListenerfv(AL.POSITION, [ax(framei),ay(framei),az(framei)]);
+            
+            if IsOSX
+                alcASASetListener(ALC.ASA_REVERB_ON, 1);
+                alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+                alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
             end
         end
         
