@@ -1,3 +1,7 @@
+% simulate auditory-visual heading perception
+% add a lifetime for both visual and auditory stimulus
+% environment: Matlab R2017a, Psychtoolbox 3, OpenAl
+%
 % ToDO:
 % 1. Eyelink
 % 2. Audio-visual both provided segregation condition
@@ -131,11 +135,6 @@ while toc<2 % unit second
 end
 
 %% initial opengl
-% if eyelinkMode
-%     Screen('Preference', 'SkipSyncTests', 1); % for debug/test
-% else
-%     Screen('Preference', 'SkipSyncTests', 0); % for recording
-% end
 Screen('Preference', 'SkipSyncTests', 0); % for recording
 
 AssertOpenGL;
@@ -405,9 +404,6 @@ while trialI < trialNum+1
     
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
-    aCurT = tic;
-    aSt = GetSecs;
-    
     
     % start giving frames
     for framei = 1:frameNum
@@ -499,7 +495,6 @@ while trialI < trialNum+1
             Screen('EndOpenGL', win);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
-            
         else
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);

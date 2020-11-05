@@ -1,5 +1,11 @@
+% simulate auditory-visual heading perception
+% environment: Matlab R2017a, Psychtoolbox 3, OpenAl
+%
+% ToDO:
+% 1. Eyelink
+% 2. Audio-visual both provided segregation condition
 CloseOpenAL;
-clear all
+clear all STARDATA
 close all
 
 global TRIALINFO
@@ -27,13 +33,13 @@ escape    = KbName('ESCAPE');
 leftKey   = KbName('LeftArrow');
 rightKey  = KbName('RightArrow');
 upArror   = KbName('UpArrow');
-cKey      = KbName('c'); % force calibration
+cKey      = KbName('c'); % force calibration, temporally not in use
 enter     = KbName('Return');
 
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-testMode = 1; % in test mode, the codes related to Eyelink will be skipped so that you can debug in your own PC
+eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
@@ -74,9 +80,6 @@ VISUAL.coherence = 0.3; % in percent
 VISUAL.probability = VISUAL.coherence;
 VISUAL.lifeTime  = 3; % frame number
 
-VISUAL.dimensionX = 200*coordinateMuilty;  % cm
-VISUAL.dimensionY = 80*coordinateMuilty;  % cm
-VISUAL.dimensionZ = 200*coordinateMuilty;  % cm
 VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
@@ -104,6 +107,9 @@ AUDITORY.sourceDegree = {15,-15}; % degree for position
 % AUDITORY.sourceDistance = {50*coordinateMuilty}; % cm
 % AUDITORY.sourceDegree = {0}; % degree for position
 
+% random seed
+seed = rng('shuffle');
+
 %% trial conditions and order
 calculateConditions();
 % TRIALINFO.trialConditions =
@@ -128,7 +134,7 @@ fprintf(1,'minutes \n');
 % auto-calibrate for Eyelink, temporarily not used
 % calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 % automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
-disp('Continue?')
+disp('Continue? Or press any key to terminate.')
 
 % terminate the block if you feel it is too long
 tic
@@ -140,11 +146,7 @@ while toc<2 % unit second
 end
 
 %% initial opengl
-if testMode
-    Screen('Preference', 'SkipSyncTests', 1); % for debug/test
-else
-    Screen('Preference', 'SkipSyncTests', 0); % for recording
-end
+Screen('Preference', 'SkipSyncTests', 0); % for recording
 
 AssertOpenGL;
 InitializeMatlabOpenGL;
@@ -177,6 +179,10 @@ SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 % SCREEN.frameRate = SCREEN.refreshRate;
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
+VISUAL.dimensionY = SCREEN.widthCM/SCREEN.distance*FRUSTUM.clipFar;
+
+[VISUAL.dimensionX, VISUAL.dimensionZ] = generateDimensionField(AUDITORY.headingDistance,...
+                        VISUAL.headingDegree,FRUSTUM.checkLeft,FRUSTUM.checkRight,FRUSTUM.clipFar);
 
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
@@ -191,7 +197,7 @@ Screen('BlendFunction', win, GL_ONE, GL_ZERO);
 GenerateStarField();
 
 %% initial eyelink
-if ~testMode
+if eyelinkMode
     tempName = 'TEMP1'; % need temp name because Eyelink only know hows to save names with 8 chars or less. Will change name using matlab's moveFile later.
     dummymode=0;
     
@@ -346,14 +352,15 @@ while trialI < trialNum+1
     visualHeadingi = cell2mat(conditioni(1:3));
     auditoryHeadingi = cell2mat(conditioni(4:6));
     auditorySourcei = conditioni(7:10);
+    visualPresent = ~any(isnan(visualHeadingi));
     soundPresent = ~isnan(auditorySourcei{end}(i));
     
-    if ~sum(isnan(visualHeadingi))
+    if visualPresent
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
     else
         clear vx vy vz vfx vfy vfz
     end
-    if ~sum(isnan(auditoryHeadingi))
+    if soundPresent
         [ax,ay,az,~,~,~] = calMove(auditoryHeadingi,SCREEN.refreshRate);
     else
         clear ax ay az
@@ -379,12 +386,12 @@ while trialI < trialNum+1
     % delete the frameNum from last trial
     clear frameNum
     
-    if exist('vx','var')
+    if visualPresent
         length(vx)
         frameNum = length(vx)-1;
     end
 
-    if exist('ax','var')
+    if soundPresent
         if exist('frameNum','var')
             if length(ax)-1 ~= frameNum
                 frameNum = min(frameNum,length(ax)-1);
@@ -394,21 +401,17 @@ while trialI < trialNum+1
         end
     end
     
-    aPosition = [0 0 0];
     va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
         0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
     alListenerfv(AL.VELOCITY, va);
     alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-    alListenerfv(AL.POSITION, aPosition);
+    alListenerfv(AL.POSITION, [0 0 0]);
     if soundPresent
         alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
     end
     
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
-    aCurT = tic;
-    aSt = GetSecs;
-    
     
     % start giving frames
     for framei = 1:frameNum
@@ -423,24 +426,18 @@ while trialI < trialNum+1
             break
         end
         
-        if ~sum(isnan(auditoryHeadingi))
+        if soundPresent
             % for auditory cue
-            if toc(aCurT) <= auditoryHeadingi(3)
-                ati = GetSecs - aSt;
-                aSt = GetSecs;
-                
-                aPosition = aPosition + va*ati;
-                alListenerfv(AL.POSITION, aPosition);
-                
-                if IsOSX
-                    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-                    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-                    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
-                end
+            alListenerfv(AL.POSITION, [ax(framei),ay(framei),az(framei)]);
+            
+            if IsOSX
+                alcASASetListener(ALC.ASA_REVERB_ON, 1);
+                alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
+                alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
             end
         end
         
-        if exist('vx','var')
+        if visualPresent
             % for visual cue
             if keyCode(pageUp)
                 TRIALINFO.deviation = TRIALINFO.deviation + deviationAdjust;
@@ -486,10 +483,8 @@ while trialI < trialNum+1
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
-            
             Screen('Flip', win);
         else
-            pause(0.01);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             Screen('Flip', win);
         end
@@ -543,19 +538,19 @@ while trialI < trialNum+1
         if choice(trialI,1) == correctAnswer
             % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
             [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
-            if ~testMode
+            if eyelinkMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         elseif choice(trialI,1)
             % sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
             [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
-            if ~testMode
+            if eyelinkMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         else
             sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
             [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
-            if ~testMode
+            if eyelinkMode
                 Eyelink('message', ['Missing ' num2str(trialI)]);
             end
         end
@@ -566,26 +561,26 @@ while trialI < trialNum+1
     else
         if choice(trialI,1)
             sound(0.2*sin(2*pi*25*(1:3000)/200)); % response cue
-            if ~testMode
+            if eyelinkMode
                 Eyelink('message', ['Decision made ' num2str(trialI)]);
             end
         else
             sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
-            if ~testMode
+            if eyelinkMode
                 Eyelink('message', ['Missing ' num2str(trialI)]);
             end
         end
     end
     if choice(trialI,1)
         conditionIndex(trialI,:) = [conditioni,trialI];
-        if ~testMode
+        if eyelinkMode
             Eyelink('message', ['Trial complete ' num2str(trialI)]);
         end
         trialI = trialI +1;
     else
         trialOrder = [trialOrder trialOrder(trialI)];
         trialOrder(trialI) = [];
-        if ~testMode
+        if eyelinkMode
             Eyelink('message', ['Trial repeat ' num2str(trialI)]);
         end
     end
@@ -595,7 +590,7 @@ end
 
 Screen('Flip', win);
 
-if ~testMode
+if eyelinkMode
     Eyelink('StopRecording');
     Eyelink('CloseFile');
     try
@@ -652,6 +647,6 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL')
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed')
 Screen('CloseAll');
 cd(curdir);
