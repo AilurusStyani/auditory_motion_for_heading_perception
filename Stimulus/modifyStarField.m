@@ -5,7 +5,7 @@ global STARDATA;
 dimensionX = VISUAL.dimensionX;
 dimensionY = VISUAL.dimensionY;
 dimensionZ = VISUAL.dimensionZ ;
-size = VISUAL.starSize ;
+size = degree2length(VISUAL.starSize);
 density = VISUAL.density ;
 probability = VISUAL.probability ;
 totalDots = dimensionX*dimensionY*dimensionZ*density;

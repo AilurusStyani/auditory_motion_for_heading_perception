@@ -80,7 +80,7 @@ VISUAL.coherence = 0.3; % in percent
 VISUAL.probability = VISUAL.coherence;
 VISUAL.lifeTime  = 3; % frame number
 
-VISUAL.starSize = 0.5;    % degree
+VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
 AUDITORY.height = 0.05*coordinateMuilty; % m

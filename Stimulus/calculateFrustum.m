@@ -3,8 +3,8 @@ global TRIALINFO;
 global FRUSTUM;
 global SCREEN;
 
-FRUSTUM.clipNear = 50*coordinateMuilty; % cm
-FRUSTUM.clipFar = 150*coordinateMuilty; % cm
+FRUSTUM.clipNear = SCREEN.distance; % m
+FRUSTUM.clipFar = 150*coordinateMuilty; % m
 FRUSTUM.top = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.heightCM / 2.0);
 FRUSTUM.bottom = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.heightCM / 2.0);
 
@@ -17,6 +17,8 @@ if nargin ==1
     FRUSTUM.dexterRight = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0);
     FRUSTUM.dexterLeft = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0);
     
+    FRUSTUM.checkRight = (FRUSTUM.clipFar / SCREEN.distance) * (SCREEN.widthCM / 2.0 + TRIALINFO.deviation / 2.0);
+    FRUSTUM.checkLeft = (FRUSTUM.clipFar / SCREEN.distance) * (-SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0);
 elseif nargin == 2
     delta = FRUSTUM.clipNear * sind(deltaDegree);
     % left eye
@@ -26,4 +28,7 @@ elseif nargin == 2
     % right eye
     FRUSTUM.dexterRight = (FRUSTUM.clipNear / SCREEN.distance) * (SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0)+delta;
     FRUSTUM.dexterLeft = (FRUSTUM.clipNear / SCREEN.distance) * (-SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0)+delta;
+    
+    FRUSTUM.checkRight = (FRUSTUM.clipFar / SCREEN.distance) * (SCREEN.widthCM / 2.0 + TRIALINFO.deviation / 2.0)+FRUSTUM.clipFar * sind(deltaDegree);
+    FRUSTUM.checkLeft = (FRUSTUM.clipFar / SCREEN.distance) * (-SCREEN.widthCM / 2.0 - TRIALINFO.deviation / 2.0)+FRUSTUM.clipFar * sind(deltaDegree);
 end
