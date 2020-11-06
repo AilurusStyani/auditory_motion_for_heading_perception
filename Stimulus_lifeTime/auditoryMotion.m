@@ -45,10 +45,10 @@ feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
 %% parameters
-coordinateMuilty = 1; % convert cm to coordinate system for moving distance etc.
+coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
-TRIALINFO.headingDegree   = {-45 -30 -5 5};
-TRIALINFO.headingDistance = {30};
+TRIALINFO.headingDegree   = {-45 45};
+TRIALINFO.headingDistance = {0.3*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
@@ -62,28 +62,28 @@ TRIALINFO.fixationSizeD      = 0.25; % degree
 TRIALINFO.intergration = [1];
 
 % for SCREEN
-SCREEN.distance = 60*coordinateMuilty;% cm
+SCREEN.distance = 0.6*coordinateMuilty;% m
 
-TRIALINFO.deviation = 1.2; % initial binocular deviation, cm
-deviationAdjust     = 0.2; % how fast to adjust the deviation by key pressing, cm
+TRIALINFO.deviation = 0.02; % initial binocular deviation, m
+deviationAdjust     = 0.002; % how fast to adjust the deviation by key pressing, m
 
 % parameters for visual cue
 VISUAL.headingDegree = TRIALINFO.headingDegree; % cell
 VISUAL.headingDistance = TRIALINFO.headingDistance; % cell
 VISUAL.headingTime = TRIALINFO.headingTime; % cell
 
-VISUAL.fixationSizeD  = 0.25;  % degree
+VISUAL.fixationSizeD  = 0.5;  % degree
 VISUAL.fixationWindow = 2; % degree
 
-VISUAL.density   = 300/(100*coordinateMuilty)^3;    % convert num/m^3 to num/cm^3
+VISUAL.density   = 300;    % num/m^3
 VISUAL.coherence = 0.3; % in percent
 VISUAL.probability = VISUAL.coherence;
 VISUAL.lifeTime  = 3; % frame number
 
-VISUAL.starSize = 0.1;    % degree
+VISUAL.starSize = 0.5;    % degree
 
 % parameters for auditory cue
-AUDITORY.height = 5*coordinateMuilty; % cm
+AUDITORY.height = 0.05*coordinateMuilty; % m
 
 AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
 AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
@@ -92,9 +92,9 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % % sample currently not work for double sources.
 AUDITORY.sourceNum     = {1};
 AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {[10*coordinateMuilty,30*coordinateMuilty]}; % cm
+AUDITORY.sourceDistance = {[0.1*coordinateMuilty,0.3*coordinateMuilty]}; % m
 AUDITORY.sourceDegree = {[-4,4]}; % degree for position
-AUDITORY.sourceLifeTimeSplit = 3;
+AUDITORY.sourceLifeTimeSplit = 2;
 
 % random seed
 seed = rng('shuffle');
@@ -158,8 +158,8 @@ SCREEN.heightPix = winRect(4);
 SCREEN.center = [SCREEN.widthPix/2, SCREEN.heightPix/2];
 
 [width, height] = Screen('DisplaySize', SCREEN.screenId);
-SCREEN.widthCM = width/10; % mm to cm
-SCREEN.heightCM = height/10; % mm to cm
+SCREEN.widthM = width/1000; % mm to m
+SCREEN.heightM = height/1000; % mm to m
 
 TRIALINFO.fixationSizeP = degree2pix(TRIALINFO.fixationSizeD/2);
 TRIALINFO.fixationPosition = [SCREEN.widthPix/2,SCREEN.heightPix/2];
@@ -168,7 +168,7 @@ SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 % SCREEN.frameRate = SCREEN.refreshRate;
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
-VISUAL.dimensionY = SCREEN.widthCM/SCREEN.distance*FRUSTUM.clipFar;
+VISUAL.dimensionY = SCREEN.widthM/SCREEN.distance*FRUSTUM.clipFar;
 
 [VISUAL.dimensionX, VISUAL.dimensionZ] = generateDimensionField(AUDITORY.headingDistance,...
                         VISUAL.headingDegree,FRUSTUM.checkLeft,FRUSTUM.checkRight,FRUSTUM.clipFar);
@@ -379,7 +379,6 @@ while trialI < trialNum+1
     clear frameNum
     
     if visualPresent
-        length(vx)
         frameNum = length(vx)-1;
     end
 
