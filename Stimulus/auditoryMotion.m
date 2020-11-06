@@ -179,7 +179,7 @@ SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
 % SCREEN.frameRate = SCREEN.refreshRate;
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
-VISUAL.dimensionY = SCREEN.widthCM/SCREEN.distance*FRUSTUM.clipFar;
+VISUAL.dimensionY = SCREEN.heightCM/SCREEN.distance*FRUSTUM.clipFar;
 
 [VISUAL.dimensionX, VISUAL.dimensionZ] = generateDimensionField(AUDITORY.headingDistance,...
                         VISUAL.headingDegree,FRUSTUM.checkLeft,FRUSTUM.checkRight,FRUSTUM.clipFar);
