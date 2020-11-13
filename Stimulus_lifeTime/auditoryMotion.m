@@ -319,6 +319,7 @@ HideCursor(SCREEN.screenId);
 choice = zeros(trialNum,2);
 choiceTime = nan(trialNum,2);
 conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
+sourceLocation= cell(trialNum,AUDITORY.sourceLifeTimeSplit);
 
 %% trial start
 trialI = 1;
@@ -358,12 +359,15 @@ while trialI < trialNum+1
     
     % set auditory source
     if soundPresent
-        for i = 1:auditorySourcei{1}
+       aLifetimei = 1;
+       for i = 1:auditorySourcei{1}
             alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
             
-            zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}));
-            xLim = sort(round(ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})));
-            alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
+            zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i})*100)))/100;
+            xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i}))*100)))/100;
+            
+            sourceLocation{trialI,aLifetimei} = cat(1,sourceLocation{trialI,aLifetimei},[xPos,0,zPos]);
+            alSource3f(sources(i), AL.POSITION, xPos, 0, zPos);
             
             % Sources themselves remain static in space:
             alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
@@ -411,13 +415,15 @@ while trialI < trialNum+1
             GenerateStarField();
         end
         if soundPresent
-            if mod(framei,auditoryLifetimeF)==0
+            if mod(framei,auditoryLifetimeF)==0 && framei~=frameNum
+                aLifetimei = aLifetimei+1;
                 for i = 1:auditorySourcei{1}
                     alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
                     
-                    zLim = sort(round(-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i}));
-                    xLim = sort(round(ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i})));
-                    alSource3f(sources(i), AL.POSITION, randi(xLim), 0, randi(zLim));
+                    zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{i})*100)))/100;
+                    xPos = randi(sort(round((ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{i}))*100)))/100;
+                    sourceLocation{trialI,aLifetimei} = cat(1,sourceLocation{trialI,aLifetimei},[xPos,0,zPos]); 
+                    alSource3f(sources(i), AL.POSITION, xPos, 0, zPos);
                     
                     % Sources themselves remain static in space:
                     alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
@@ -658,6 +664,6 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed')
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation')
 Screen('CloseAll');
 cd(curdir);
