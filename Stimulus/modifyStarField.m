@@ -6,8 +6,8 @@ dimensionX = VISUAL.dimensionX;
 dimensionY = VISUAL.dimensionY;
 dimensionZ = VISUAL.dimensionZ ;
 size = degree2length(VISUAL.starSize);
-density = VISUAL.density ;
-probability = VISUAL.probability ;
+density = VISUAL.density;
+probability = VISUAL.probability;
 totalDots = dimensionX*dimensionY*dimensionZ*density;
 totalModifyDots = floor(totalDots*(1.0-probability));
 j = 1;
@@ -16,7 +16,7 @@ if totalModifyDots>1
         if probability < rand()
             baseX=rand()*dimensionX-dimensionX/2.0;
             baseY=rand()*dimensionY-dimensionY/2.0;
-            baseZ=rand()*dimensionZ-dimensionZ/2.0;
+            baseZ=rand()*dimensionZ-dimensionZ;
       
             %Vertex1
             Vertex1X=baseX - size/2.0;

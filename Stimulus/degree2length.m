@@ -4,8 +4,8 @@ function length = degree2length(degree)
 % On X axis: dir = 1; On Y axis: dir = 2
 global SCREEN
 
-a=SCREEN.widthPix / SCREEN.widthCM;
-b=SCREEN.heightPix / SCREEN.heightCM;
+a=SCREEN.widthPix / SCREEN.widthM;
+b=SCREEN.heightPix / SCREEN.heightM;
 
 if nargin == 1
     if abs(a-b)/min(a,b) < 0.05
