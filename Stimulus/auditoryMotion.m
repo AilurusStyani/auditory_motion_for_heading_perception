@@ -47,24 +47,24 @@ feedbackDuration = 1; % unit s
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
-TRIALINFO.headingDegree   = {0};
+TRIALINFO.headingDegree   = {-15 -5 -1 1 5 15}; %%%%%% main par
 TRIALINFO.headingDistance = {0.3*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
-TRIALINFO.stimulusType     = [1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
-TRIALINFO.choicePeriod        = 2; % second
-TRIALINFO.intertrialInterval = 1; % second
+TRIALINFO.choicePeriod       = 2; % second
+TRIALINFO.intertrialInterval  = 1; % second
 TRIALINFO.fixationPeriod     = 0; % second
 TRIALINFO.fixationSizeD      = 0.25; % degree
 
 % 1 for intergration, both visual and auditory use the parameters in TRIALINFO,
 % 0 for segregation, visual cue will use VISUAL, and auditory will use AUDITORY.
-TRIALINFO.intergration = [1];
+TRIALINFO.intergration = [0];
 
 % for SCREEN
 SCREEN.distance = 0.6*coordinateMuilty;% m
 
-TRIALINFO.deviation = 0.02; % initial binocular deviation, m
+TRIALINFO.deviation = 0; % initial binocular deviation, m
 deviationAdjust     = 0.002; % how fast to adjust the deviation by key pressing, m
 
 % parameters for visual cue
@@ -76,24 +76,27 @@ VISUAL.fixationSizeD  = 0.5;  % degree
 VISUAL.fixationWindow = 2; % degree
 
 VISUAL.density   = 300;    % num/m^3
-VISUAL.coherence = 0.3; % in percent
+VISUAL.coherence = 0.8; % in percent  %%%%%% main par
 VISUAL.probability = VISUAL.coherence;
-VISUAL.lifeTime  = 3; % frame number
+VISUAL.lifeTime  = 20; % frame number
 
 VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
 AUDITORY.height = 0.05*coordinateMuilty; % m
-
-AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
+if any(TRIALINFO.intergration)
+    AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
+elseif any(TRIALINFO.intergration == 0)
+    AUDITORY.headingDegree = {5 -5 35 -35}; % delta degree for segregation condition  %%%%%% main par
+end
 AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
 AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
 % % sample currently not work for double sources.
-AUDITORY.sourceNum     = {2};
-AUDITORY.sourceHeading = {[180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {[0.1*coordinateMuilty,0.3*coordinateMuilty; 0.1*coordinateMuilty,0.3*coordinateMuilty]}; % m
-AUDITORY.sourceDegree = {[-30,-10;10,30]}; % degree for position
+AUDITORY.sourceNum     = {1};
+AUDITORY.sourceHeading = {[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceDistance = {[0.1*coordinateMuilty,0.3*coordinateMuilty]}; % m
+AUDITORY.sourceDegree = {[10,-10]}; % degree for position
 AUDITORY.sourceLifeTimeSplit = 2;
 
 % random seed
@@ -345,6 +348,7 @@ while trialI < trialNum+1
     auditorySourcei = conditioni(7:10);
     visualPresent = ~any(isnan(visualHeadingi));
     soundPresent = ~isnan(auditorySourcei{end}(i));
+    ansHeading = nanmean([auditoryHeadingi,visualHeadingi]);
     
     if visualPresent
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
@@ -522,17 +526,11 @@ while trialI < trialNum+1
     end
     
     %% start choice
-    if soundPresent
-        correctAnswer = (auditoryHeadingi(1) >0)+1;
-        if auditoryHeadingi(1) == 0
-           correctAnswer = randi(2)-1;
-        end
-    else
-        correctAnswer = (visualHeadingi(1) >0)+1;
-        if visualHeadingi(1) == 0
-           correctAnswer = randi(2);
-        end
+    correctAnswer = (ansHeading >0)+1;
+    if ansHeading == 0
+        correctAnswer = randi(2);
     end
+    
     startChoice = tic;
     [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
     Screen('TextBackgroundColor',win, [0 0 0 0]);
