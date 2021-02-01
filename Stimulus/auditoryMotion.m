@@ -41,13 +41,13 @@ pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
 eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
-feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
+feedback = 0; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      = 10;
-TRIALINFO.headingDegree   = {-15 -5 -1 1 5 15}; %%%%%% main par
+TRIALINFO.headingDegree   = {-15 -5 0 5 15}; %%%%%% main par
 TRIALINFO.headingDistance = {0.3*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
@@ -87,16 +87,16 @@ AUDITORY.height = 0.05*coordinateMuilty; % m
 if any(TRIALINFO.intergration)
     AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
 elseif any(TRIALINFO.intergration == 0)
-    AUDITORY.headingDegree = {5 -5 35 -35}; % delta degree for segregation condition  %%%%%% main par
+    AUDITORY.headingDegree = {10 -10 20 -20}; % delta degree for segregation condition  %%%%%% main par
 end
 AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
 AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
 % % sample currently not work for double sources.
 AUDITORY.sourceNum     = {1};
-AUDITORY.sourceHeading = {[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
 AUDITORY.sourceDistance = {[0.1*coordinateMuilty,0.3*coordinateMuilty]}; % m
-AUDITORY.sourceDegree = {[10,-10]}; % degree for position
+AUDITORY.sourceDegree = {[20,-20]}; % degree for position
 AUDITORY.sourceLifeTimeSplit = 2;
 
 % random seed
@@ -118,7 +118,7 @@ trialOrder = randperm(trialNum);
 disp(['This block has  ' num2str(trialNum) ' trials']);
 
 timePredicted = (TRIALINFO.fixationPeriod + mean(cell2mat(TRIALINFO.headingTime)) + TRIALINFO.choicePeriod + ...
-    TRIALINFO.intertrialInterval ) * trialNum;
+    feedbackDuration * logical(feedback) + TRIALINFO.intertrialInterval ) * trialNum;
 fprintf(1,'This block will cost  ');
 fprintf(2,[num2str(timePredicted/60) ' '] );
 fprintf(1,'minutes \n');
@@ -520,8 +520,10 @@ while trialI < trialNum+1
     end
 
     SCREEN.frameRate = round(1/nanmean(frameTime));
-    disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate)]);
     if SCREEN.refreshRate*0.95 > SCREEN.frameRate
+        disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate) ' FPS in trial ' num2str(trialI)]);
+        disp(['Min. frame rate for this trial  is ' num2str( round(1/nanmax(frameTime))) ' FPS.']);
+        disp(['Max. frame duration for this trial  is ' num2str( nanmax(frameTime)) ' Second.']);
         fprintf(2,'FPS drop!!!!\n');
     end
     
