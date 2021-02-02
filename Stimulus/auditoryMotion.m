@@ -309,9 +309,8 @@ for i = 1:nsources
     
     % Switch source to looping playback: It will repeat playing the buffer until its stopped.
     alSourcei(sources(i), AL.LOOPING, AL.TRUE);
-    
     % Set emission volume to 100%, aka a gain of 1.0:
-    alSourcef(sources(i), AL.GAIN, 3);
+    alSourcef(sources(i), AL.GAIN, 1);
     
     alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
     alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
