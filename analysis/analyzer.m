@@ -8,6 +8,7 @@ colorIndex = {[0.9,0.2,0.2],[0.2,0.9,0.2],[0.2,0.2,0.9]};
 for fileI = 1:length(files)
     nameIndex = strfind(files(fileI).name,'_');
     subName = files(fileI).name(nameIndex(1)+1:nameIndex(2)-1);
+    dateNum = files(fileI).name(nameIndex(2)+1:nameIndex(2)+11);
 %     if contains(subName,'test') || isempty(subName)
 %         continue
 %     end
@@ -62,7 +63,7 @@ for fileI = 1:length(files)
     set(gca, 'xlim',[min(aUniqueDeg)-3,max(aUniqueDeg)+3],'ylim',[0 1])
     xlabel('Heading degree');
     ylabel('Proportion of "right" choice');
-    title(['Participant ' subName]);
+    title(['Participant ' subName dateNum]);
     text(5,0.9,sprintf('\\it\\mu_{Apsy} = \\rm%6.3g\\circ',aBias),'color','r')
     text(5,0.8,sprintf('\\it\\sigma_{Apsy} = \\rm%6.3g\\circ', aThreshold),'color','r');
     
@@ -85,10 +86,10 @@ for fileI = 1:length(files)
     xi = min(vUniqueDeg):0.1:max(vUniqueDeg);
     y_fit = cum_gaussfit([vBias,vThreshold],xi);
     
-    plot(vUniqueDeg,vPR,'*g');
-    plot(xi,y_fit,'-g');
-    text(5,0.7,sprintf('\\it\\mu_{Vpsy} = \\rm%6.3g\\circ',aBias),'color','g')
-    text(5,0.6,sprintf('\\it\\sigma_{Vpsy} = \\rm%6.3g\\circ', aThreshold),'color','g');
+    plot(vUniqueDeg,vPR,'*b');
+    plot(xi,y_fit,'-b');
+    text(5,0.7,sprintf('\\it\\mu_{Vpsy} = \\rm%6.3g\\circ',vBias),'color','b')
+    text(5,0.6,sprintf('\\it\\sigma_{Vpsy} = \\rm%6.3g\\circ', vThreshold),'color','b');
     
     % both provided
     bParameter = cell2mat(data.conditionIndex(bothIndex,[1:5,end]));
