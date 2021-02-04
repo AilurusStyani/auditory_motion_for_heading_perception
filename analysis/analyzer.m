@@ -63,7 +63,7 @@ for fileI = 1:length(files)
     set(gca, 'xlim',[min(aUniqueDeg)-3,max(aUniqueDeg)+3],'ylim',[0 1])
     xlabel('Heading degree');
     ylabel('Proportion of "right" choice');
-    title(['Participant ' subName dateNum]);
+    title(['Participant ' subName ' ' dateNum]);
     text(5,0.9,sprintf('\\it\\mu_{Apsy} = \\rm%6.3g\\circ',aBias),'color','r')
     text(5,0.8,sprintf('\\it\\sigma_{Apsy} = \\rm%6.3g\\circ', aThreshold),'color','r');
     
@@ -94,7 +94,28 @@ for fileI = 1:length(files)
     % both provided
     bParameter = cell2mat(data.conditionIndex(bothIndex,[1:5,end]));
     bChoice = data.choice(bothIndex,:);
+    vH = bParameter(:,1); aH = bParameter(:,4);
+    bHeadDeg = mean([vH,aH],2);
+    bUniqueDeg = unique(bHeadDeg);
+    bRight = zeros(size(bUniqueDeg));
+    bChoiceTimes = zeros(size(bUniqueDeg));
     
+    for i = 1:length(bUniqueDeg)
+        uniqueIndex = bHeadDeg == bUniqueDeg(i);
+        bRight(i) = sum(bChoice(uniqueIndex,1)-1);
+        bChoiceTimes(i) = sum(uniqueIndex);
+    end
+    bPR = bRight ./ bChoiceTimes;
+    fitData = [bUniqueDeg, bPR, bChoiceTimes];
+    [bBias, bThreshold] = cum_gaussfit_max1(fitData(1:end,:));
+    xi = min(bUniqueDeg):0.1:max(bUniqueDeg);
+    y_fit = cum_gaussfit([bBias,bThreshold],xi);
     
+    plot(bUniqueDeg,bPR,'*k');
+    plot(xi,y_fit,'-k');
+    text(5,0.5,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',bBias),'color','k')
+    text(5,0.4,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', bThreshold),'color','k');
+    pred = sqrt((vThreshold^2*aThreshold^2)/(vThreshold^2+aThreshold^2));
+    text(5,0.3,sprintf('\\it\\sigma_{prepsy} = \\rm%6.3g\\circ', pred),'color','k');
     figureNum = figureNum +1;
 end
