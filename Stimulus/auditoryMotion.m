@@ -4,7 +4,7 @@
 %
 % ToDO:
 % 1. Eyelink
-% 2. Audio-visual both provided segregation condition
+
 CloseOpenAL;
 clear all STARDATA
 close all
@@ -50,7 +50,7 @@ TRIALINFO.repetition      = 10;
 TRIALINFO.headingDegree   = {-15 -5 0 5 15}; %%%%%% main par
 TRIALINFO.headingDistance = {0.3*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
-TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.choicePeriod       = 2; % second
 TRIALINFO.intertrialInterval  = 1; % second
@@ -68,7 +68,9 @@ TRIALINFO.deviation = 0; % initial binocular deviation, m
 deviationAdjust     = 0.002; % how fast to adjust the deviation by key pressing, m
 
 % parameters for visual cue
-VISUAL.headingDegree = TRIALINFO.headingDegree; % cell
+
+VISUAL.headingDegree = {0 20 -20 40 -40}; % delta degree for segregation condition  %%%%%% main par
+
 VISUAL.headingDistance = TRIALINFO.headingDistance; % cell
 VISUAL.headingTime = TRIALINFO.headingTime; % cell
 
@@ -84,11 +86,9 @@ VISUAL.starSize = 0.1;    % degree
 
 % parameters for auditory cue
 AUDITORY.height = 0.05*coordinateMuilty; % m
-if any(TRIALINFO.intergration)
-    AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
-elseif any(TRIALINFO.intergration == 0)
-    AUDITORY.headingDegree = {10 -10 20 -20}; % delta degree for segregation condition  %%%%%% main par
-end
+
+AUDITORY.headingDegree = TRIALINFO.headingDegree; % cell
+
 AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
 AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
@@ -131,8 +131,8 @@ disp('Continue? Or press any key to terminate.')
 % terminate the block if you feel it is too long
 tic
 while toc<2 % unit second
-    [~, ~, keyCode]=KbCheck;
-    if keyCode(escape)
+    [keyIsDown, ~, keyCode]=KbCheck;
+    if keyIsDown
         return
     end
 end

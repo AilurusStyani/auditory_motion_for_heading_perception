@@ -39,7 +39,7 @@ if any(ismember(TRIALINFO.intergration,0))
     conTemp = [sortrows(repmat(con0V,size(con0AS,1),1)),...
         repmat(con0AS,size(con0V,1),1)];
     for i = 1:size(conTemp,1)
-        conTemp{i,4} = conTemp{i,1}+conTemp{i,4};
+        conTemp{i,1} = conTemp{i,1}+conTemp{i,4};
     end
     con0T2=conTemp;
     
