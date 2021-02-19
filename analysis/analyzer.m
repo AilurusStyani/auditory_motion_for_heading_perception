@@ -97,7 +97,7 @@ for fileI = 1:length(files)
     
     if ~isempty(bothIndex)
         % both provided
-        if data.TRIALINFO.intergration
+        if any(data.TRIALINFO.intergration)
             % intergration
             bParameter = cell2mat(data.conditionIndex(bothIndex,[1:5,end]));
             bChoice = data.choice(bothIndex,:);
@@ -140,9 +140,10 @@ end
 if ~data.TRIALINFO.intergration
     segParameter = cell2mat(segData.conditionIndex(:,[1:5]));
     segChoice = segData.choice;
-    vH = segParameter(:,1); aH = segParameter(:,4);
+    eligible = ~sum(isnan(segParameter),2);
+    vH = segParameter(eligible,1); aH = segParameter(eligible,4);
     segUniqueDeg = unique(aH);
-    deltaDeg = aH-vH;
+    deltaDeg = vH-aH;
     uniqueDeltaDeg = unique(deltaDeg);
     segRight = zeros(size(segUniqueDeg));
     segChoiceTimes = zeros(size(segUniqueDeg));
@@ -167,6 +168,7 @@ if ~data.TRIALINFO.intergration
         xi = min(segUniqueDeg):0.1:max(segUniqueDeg);
         y_fit = cum_gaussfit([segBias,segThreshold],xi);
         
+%         if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');hold on;
         if uniqueDeltaDeg(i)<0
             plot(segUniqueDeg,segPR,'*','color',colorIndex{1,colorNum1});
             plot(xi,y_fit,'-','color',colorIndex{1,colorNum1});
@@ -186,8 +188,8 @@ if ~data.TRIALINFO.intergration
             colorNum2=colorNum2+1;
         end
     end
-    disp(['Biases are ' num2str(segBiasIndex') ' for -40 to 40 delta degree.']);
-    disp(['Thresholds are ' num2str(segThresholdIndex') ' for -40 to 40 delta degree.']);
+    disp(['Biases are ' num2str(segBiasIndex') ' for ' num2str(min(uniqueDeltaDeg)) ' to ' num2str(max(uniqueDeltaDeg)) ' delta degree.']);
+    disp(['Thresholds are ' num2str(segThresholdIndex') ' for ' num2str(min(uniqueDeltaDeg)) ' to ' num2str(max(uniqueDeltaDeg)) ' 40 delta degree.']);
 end
 
 function S = CatStructFields(S, T, dim)
