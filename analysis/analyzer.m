@@ -1,10 +1,10 @@
 close all;
 clear all;
 
-dataPath = '';
+dataPath = 'D:\BYC\project\OpenAl\auditory_motion_for_heading_perception\Stimulus\data\test\lastest';
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
-colorIndex = {[0.9,0.0,0.2],[0.8,0.4,0.2];[0.0 0.9 0.2],[0.4 0.8 0.2]};
+colorIndex = {[0.9,0.0,0.2],[0.8,0.4,0.2];[0.4 0.8 0.2],[0.0 0.9 0.2]};
 segData = [];
 for fileI = 1:length(files)
     nameIndex = strfind(files(fileI).name,'_');
@@ -60,8 +60,8 @@ for fileI = 1:length(files)
         
         
         plot([0,0],[0,1],'-.k');
-        plot(aUniqueDeg,aPR,'*r');
-        plot(xi,y_fit,'-r');
+        plot(aUniqueDeg,aPR,'*b');
+        plot(xi,y_fit,'-.b');
         set(gca, 'xlim',[min(aUniqueDeg)-3,max(aUniqueDeg)+3],'ylim',[0 1])
         xlabel('Heading degree');
         ylabel('Proportion of "right" choice');
@@ -89,8 +89,8 @@ for fileI = 1:length(files)
         xi = min(vUniqueDeg):0.1:max(vUniqueDeg);
         y_fit = cum_gaussfit([vBias,vThreshold],xi);
         
-        plot(vUniqueDeg,vPR,'*b');
-        plot(xi,y_fit,'-b');
+        plot(vUniqueDeg,vPR,'*','color',[1 0.5 0]);
+        plot(xi,y_fit,'-.','color',[1 0.5 0]);
         text(5,0.7,sprintf('\\it\\mu_{Vpsy} = \\rm%6.3g\\circ',vBias),'color','b')
         text(5,0.6,sprintf('\\it\\sigma_{Vpsy} = \\rm%6.3g\\circ', vThreshold),'color','b');
     end
@@ -127,9 +127,11 @@ for fileI = 1:length(files)
         else
             % for segregation condition
             if isempty(segData)
-                segData = data;
+                segData = data.conditionIndex(bothIndex,:);
+                segChoice= data.choice(bothIndex,:);
             else
-                segData = CatStructFields(segData,data,1);
+                segData = cat(1,segData,data.conditionIndex(bothIndex,:));
+                segChoice = cat(1,segChoice, data.choice(bothIndex,:));
             end
         end
     end
@@ -138,8 +140,7 @@ for fileI = 1:length(files)
 end
 
 if ~data.TRIALINFO.intergration
-    segParameter = cell2mat(segData.conditionIndex(:,[1:5]));
-    segChoice = segData.choice;
+    segParameter = cell2mat(segData(:,[1:5]));
     eligible = ~sum(isnan(segParameter),2);
     vH = segParameter(eligible,1); aH = segParameter(eligible,4);
     segUniqueDeg = unique(aH);
@@ -190,12 +191,4 @@ if ~data.TRIALINFO.intergration
     end
     disp(['Biases are ' num2str(segBiasIndex') ' for ' num2str(min(uniqueDeltaDeg)) ' to ' num2str(max(uniqueDeltaDeg)) ' delta degree.']);
     disp(['Thresholds are ' num2str(segThresholdIndex') ' for ' num2str(min(uniqueDeltaDeg)) ' to ' num2str(max(uniqueDeltaDeg)) ' 40 delta degree.']);
-end
-
-function S = CatStructFields(S, T, dim)
-fields = fieldnames(S);
-for k = 1:numel(fields)
-    aField     = fields{k};
-    S.(aField) = cat(dim, S.(aField), T.(aField));
-end
 end

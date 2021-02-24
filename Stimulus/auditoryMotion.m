@@ -502,13 +502,14 @@ while trialI < trialNum+1
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            frameTime(framei) = GetSecs - frameTI;
             Screen('Flip', win);
         else
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            frameTime(framei) = GetSecs - frameTI;
             Screen('Flip', win);
         end
-        
-        frameTime(framei) = GetSecs - frameTI;
+
         frameTI = GetSecs;
     end
     
@@ -518,9 +519,9 @@ while trialI < trialNum+1
         alSourceStopv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
     end
 
-    SCREEN.frameRate = round(1/nanmean(frameTime));
-    if SCREEN.refreshRate*0.95 > SCREEN.frameRate
-        disp(['Frame rate for this trial is ' num2str(SCREEN.frameRate) ' FPS in trial ' num2str(trialI)]);
+    SCREEN.fps = round(1/nanmean(frameTime));
+    disp(['Frame rate for this trial is ' num2str(SCREEN.fps) ' FPS in trial ' num2str(trialI)]);
+    if SCREEN.refreshRate*0.95 > SCREEN.fps
         disp(['Min. frame rate for this trial  is ' num2str( round(1/nanmax(frameTime))) ' FPS.']);
         disp(['Max. frame duration for this trial  is ' num2str( nanmax(frameTime)) ' Second.']);
         fprintf(2,'FPS drop!!!!\n');
