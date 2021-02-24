@@ -26,11 +26,16 @@ if any(ismember(TRIALINFO.intergration,0))
     
     con0VdVt = [sortrows(repmat(VISUAL.headingDistance',length(VISUAL.headingTime),1)),...
         repmat(VISUAL.headingTime',length(VISUAL.headingDistance),1)];
-    con0V = [sortrows(repmat(VISUAL.headingDegree',size(con0VdVt,1),1)),...
-        repmat(con0VdVt,length(VISUAL.headingDegree),1)];
+    con0V = [sortrows(repmat(VISUAL.headingDegreeDelta',size(con0VdVt,1),1)),...
+        repmat(con0VdVt,length(VISUAL.headingDegreeDelta),1)];
     
     % visual only
-    con0T0 = cat(2,con0V,num2cell(nan(size(con0V,1),size(con0AS,2))));
+    vOnlyVdVt = [sortrows(repmat(VISUAL.headingDistance',length(VISUAL.headingTime),1)),...
+        repmat(VISUAL.headingTime',length(VISUAL.headingDistance),1)];
+    vOnlyV = [sortrows(repmat(VISUAL.headingDegree',size(vOnlyVdVt,1),1)),...
+        repmat(vOnlyVdVt,length(VISUAL.headingDegree),1)];
+    
+    con0T0 = cat(2,vOnlyV,num2cell(nan(size(vOnlyV,1),size(con0AS,2))));
     
     % auditory only
     con0T1 = cat(2,num2cell(nan(size(con0AS,1),size(con0V,2))),con0AS);

@@ -68,8 +68,9 @@ TRIALINFO.deviation = 0; % initial binocular deviation, m
 deviationAdjust     = 0.002; % how fast to adjust the deviation by key pressing, m
 
 % parameters for visual cue
+VISUAL.headingDegree = TRIALINFO.headingDegree;
 
-VISUAL.headingDegree = {0 20 -20 40 -40}; % delta degree for segregation condition  %%%%%% main par
+VISUAL.headingDegreeDelta = {0 20 -20 40 -40}; % delta degree for segregation condition  %%%%%% main par
 
 VISUAL.headingDistance = TRIALINFO.headingDistance; % cell
 VISUAL.headingTime = TRIALINFO.headingTime; % cell
