@@ -1,10 +1,10 @@
 close all;
 clear all;
 
-dataPath = 'D:\BYC\project\OpenAl\auditory_motion_for_heading_perception\Stimulus\data\test\lastest';
+dataPath = 'D:\BYC\project\OpenAl\auditory_motion_for_heading_perception\Stimulus\data\bycData';
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
-colorIndex = {[0.9,0.0,0.2],[0.8,0.4,0.2];[0.4 0.8 0.2],[0.0 0.9 0.2]};
+colorIndex = {[0.9,0.0,0.2],[0.8,0.1,0.2],[0.7, 0.2, 0.2],[0.6 0.3 0.2];[0.3 0.6 0.2],[0.2 0.7 0.2],[0.1 0.8 0.2],[0.0 0.9 0.2]};
 segData = [];
 for fileI = 1:length(files)
     nameIndex = strfind(files(fileI).name,'_');
@@ -140,6 +140,7 @@ for fileI = 1:length(files)
 end
 
 if ~data.TRIALINFO.intergration
+%     if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');hold on;
     segParameter = cell2mat(segData(:,[1:5]));
     eligible = ~sum(isnan(segParameter),2);
     vH = segParameter(eligible,1); aH = segParameter(eligible,4);
@@ -172,20 +173,20 @@ if ~data.TRIALINFO.intergration
 %         if ishandle(figureNum); end; figure(figureNum); set(gcf,'color','white');hold on;
         if uniqueDeltaDeg(i)<0
             plot(segUniqueDeg,segPR,'*','color',colorIndex{1,colorNum1});
-            plot(xi,y_fit,'-','color',colorIndex{1,colorNum1});
+            plot(xi,y_fit,'-','color',colorIndex{1,colorNum1},'LineWidth',(5-2*i));
             text(max(segUniqueDeg)-5,1.1-0.2*colorNum1,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',segBias),'color',colorIndex{1,colorNum1})
             text(max(segUniqueDeg)-5,1-0.2*colorNum1,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', segThreshold),'color',colorIndex{1,colorNum1});
             colorNum1=colorNum1+1;
         elseif uniqueDeltaDeg(i) == 0
             plot(segUniqueDeg,segPR,'*k');
             plot(xi,y_fit,'-k');
-            text(min(segUniqueDeg)+5,0.9,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',segBias),'color','k')
-            text(min(segUniqueDeg)+5,0.8,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', segThreshold),'color','k');
+            text(min(segUniqueDeg)+10,0.9,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',segBias),'color','k')
+            text(min(segUniqueDeg)+10,0.8,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', segThreshold),'color','k');
         else
             plot(segUniqueDeg,segPR,'*','color',colorIndex{2,colorNum2});
-            plot(xi,y_fit,'-','color',colorIndex{2,colorNum2});
-            text(max(segUniqueDeg)-5,0+0.2*colorNum2,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',segBias),'color',colorIndex{2,colorNum2})
-            text(max(segUniqueDeg)-5,-0.1+0.2*colorNum2,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', segThreshold),'color',colorIndex{2,colorNum2});
+            plot(xi,y_fit,'-','color',colorIndex{2,colorNum2},'LineWidth',2*i-7);
+            text(max(segUniqueDeg)-10,0+0.2*colorNum2,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',segBias),'color',colorIndex{2,colorNum2})
+            text(max(segUniqueDeg)-10,-0.1+0.2*colorNum2,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', segThreshold),'color',colorIndex{2,colorNum2});
             colorNum2=colorNum2+1;
         end
     end
