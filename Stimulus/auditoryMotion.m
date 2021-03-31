@@ -313,8 +313,9 @@ for i = 1:nsources
     % Set emission volume to 100%, aka a gain of 1.0:
     alSourcef(sources(i), AL.GAIN, 1);
     
-    alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
-    alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
+%     alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
+%     alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
+    alSource3f(sources(i), AL.DIRECTION, 0, 0, 0);
 end
 
 HideCursor(SCREEN.screenId);
@@ -422,8 +423,6 @@ while trialI < trialNum+1
             if mod(framei,auditoryLifetimeF)==0 && framei~=frameNum
                 aLifetimei = aLifetimei+1;
                 for i = 1:auditorySourcei{1}
-                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
-                    
                     zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
                     xPos = randi(sort(round((ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
                     sourceLocation{trialI,aLifetimei} = cat(1,sourceLocation{trialI,aLifetimei},[xPos,0,zPos]); 
