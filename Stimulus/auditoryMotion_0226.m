@@ -142,7 +142,8 @@ AUDITORY.sourceLifeTimeSplit = 2;
 % AUDITORY.sourceLifeTimeSplit = 2;
 
 % random seed
-seed = rng('shuffle');
+seed = str2double(datestr(now,'yymmddHHMM'));
+rng(seed,'twister');
 
 %% trial conditions and order
 calculateConditions();
@@ -316,13 +317,6 @@ soundFiles = dir(fullfile(pwd,'*.wav'));
 alListenerfv(AL.VELOCITY, [0, 0,-1]);
 alListenerfv(AL.POSITION, [0, 0, 0]);
 alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-
-% no idea whats this code for in OSX, but just left it here
-if IsOSX
-    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
-end
 
 % Create a sound source:
 sources = alGenSources(nsources);

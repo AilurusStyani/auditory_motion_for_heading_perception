@@ -22,6 +22,11 @@ subjectName = inputdlg({'Please input participant''s initials.'},'Subject Name',
 if isempty(subjectName)
     return
 end
+if strcmp(cell2mat(subjectName), 'test')
+    testMode = true;
+else
+    testMode = false;
+end
 fileName = ['auditoryMotion_' subjectName{1} '_' datestr(now,'yymmddHHMM')];
 saveDir = fullfile(pwd,'data');
 mkdir(saveDir);
@@ -131,14 +136,22 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 %AUDITORY.sourceLifeTimeSplit = 1;
 
 a1 = 20; a2=20.01;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;a9=25;a10=25.01;
-AUDITORY.sourceNum     = {2};
-AUDITORY.sourceHeading = {[180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.31*coordinateMuilty; 0.3*coordinateMuilty,0.31*coordinateMuilty]}; % m
-AUDITORY.sourceDegree = {[-a2,-a1; a1,a2]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+AUDITORY.sourceNum     = {4};
+AUDITORY.sourceHeading = {[180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.31*coordinateMuilty; 0.3*coordinateMuilty,0.31*coordinateMuilty;0.3*coordinateMuilty,0.31*coordinateMuilty; 0.3*coordinateMuilty,0.31*coordinateMuilty]}; % m
+AUDITORY.sourceDegree = {[-a2,-a1; a1,a2;-a2,-a1; a1,a2]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
 AUDITORY.sourceLifeTimeSplit = 1;
+AUDITORY.sourceInitial = 0.02; % second
+AUDITORY.sourceTerminal = 0.02; % second
+AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime))/2; % second
+
+if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>AUDITORY.sourceDuration
+    error('Invalid number for sourceInitial, sourceTerminal or sourceDuration.')
+end
 
 % random seed
-seed = rng('shuffle');
+seed = str2double(datestr(now,'yymmddHHMM'));
+rng(seed,'twister');
 
 %% trial conditions and order
 calculateConditions();
@@ -164,7 +177,7 @@ fprintf(1,'minutes \n');
 % auto-calibrate for Eyelink, temporarily not used
 % calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 % automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
-disp('Continue? Or press any key to terminate.')
+disp('Continue? Or press ESC to terminate.')
 
 % terminate the block if you feel it is too long
 tic
@@ -176,7 +189,11 @@ while toc<2 % unit second
 end
 
 %% initial opengl
-Screen('Preference', 'SkipSyncTests', 0); % for recording
+if testMode
+    Screen('Preference', 'SkipSyncTests', 1); % for test
+else
+    Screen('Preference', 'SkipSyncTests', 0); % for recording
+end
 
 AssertOpenGL;
 InitializeMatlabOpenGL;
@@ -206,7 +223,7 @@ TRIALINFO.fixationSizeP = degree2pix(TRIALINFO.fixationSizeD/2);
 TRIALINFO.fixationPosition = [SCREEN.widthPix/2,SCREEN.heightPix/2];
 
 SCREEN.refreshRate = Screen('NominalFrameRate', SCREEN.screenId);
-% SCREEN.frameRate = SCREEN.refreshRate;
+
 %% the configuration of the Frustum
 calculateFrustum(coordinateMuilty);
 VISUAL.dimensionY = SCREEN.heightM/SCREEN.distance*FRUSTUM.clipFar;
@@ -300,6 +317,8 @@ InitializeMatlabOpenAL(2);
 
 nsources = max(cell2mat(AUDITORY.sourceNum));
 
+muiltyInitialTime = linspace(0, max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration,nsources);
+
 % Generate one sound buffer:
 buffers = alGenBuffers(nsources);
 
@@ -311,13 +330,6 @@ soundFiles = dir(fullfile(pwd,'*.wav'));
 alListenerfv(AL.VELOCITY, [0, 0,-1]);
 alListenerfv(AL.POSITION, [0, 0, 0]);
 alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-
-% no idea whats this code for in OSX, but just left it here
-if IsOSX
-    alcASASetListener(ALC.ASA_REVERB_ON, 1);
-    alcASASetListener(ALC.ASA_REVERB_QUALITY, ALC.ASA_REVERB_QUALITY_Max);
-    alcASASetListener(ALC.ASA_REVERB_ROOM_TYPE, ALC.ASA_REVERB_ROOM_TYPE_Cathedral);
-end
 
 % Create a sound source:
 sources = alGenSources(nsources);
@@ -334,8 +346,20 @@ for i = 1:nsources
     filei = mod(i,length(soundFiles))+1;
     soundName = fullfile(pwd,soundFiles(filei).name);
     
-    [myNoise,freq]= psychwavread(soundName);
-    %         myNoise = myNoise(:, 1);
+    [fileSample,freq]= psychwavread(soundName);
+    if size(fileSample,1)<freq*AUDITORY.sourceDuration
+        fileSample = repmat(fileSample,ceil(freq*AUDITORY.sourceDuration/size(fileSample,1)),1);
+    end
+    if size(fileSample,2) == 2
+        fileSample = (fileSample(1:round(AUDITORY.sourceDuration*freq),1)+fileSample(1:round(AUDITORY.sourceDuration*freq),2))/2;
+    else
+         fileSample = fileSample(1:round(AUDITORY.sourceDuration*freq));
+    end
+    initialAmp = linspace(0,1,freq*AUDITORY.sourceInitial);
+    terminalAmp = linspace(1,0,freq*AUDITORY.sourceTerminal);
+    fileSample(1:length(initialAmp)) = fileSample(1:length(initialAmp)).*initialAmp';
+    fileSample(end-length(terminalAmp)+1:end) = fileSample(end-length(terminalAmp)+1:end).*terminalAmp';
+    myNoise  = [zeros(round(muiltyInitialTime(i)*freq),1);fileSample;zeros(round((max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration-muiltyInitialTime(i))*freq),1)];
     
     % Convert it...
     myNoise = int16(myNoise * 32767);
