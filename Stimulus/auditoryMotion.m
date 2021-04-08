@@ -341,11 +341,11 @@ end
 if sources==0
     sources=sources+2;
 end
-
+sourceFileList = cell(nsources,1);
 for i = 1:nsources
     filei = mod(i,length(soundFiles))+1;
     soundName = fullfile(pwd,soundFiles(filei).name);
-    
+    sourceFileList{i} = soundFiles(filei).name;
     [fileSample,freq]= psychwavread(soundName);
     if size(fileSample,1)<freq*AUDITORY.sourceDuration
         fileSample = repmat(fileSample,ceil(freq*AUDITORY.sourceDuration/size(fileSample,1)),1);
@@ -738,6 +738,6 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation')
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList')
 Screen('CloseAll');
 cd(curdir);
