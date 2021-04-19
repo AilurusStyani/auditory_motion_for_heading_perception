@@ -46,6 +46,9 @@ pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
 eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
+% auto-calibrate for Eyelink, temporarily not used
+% calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
+
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 
@@ -74,7 +77,7 @@ deviationAdjust     = 0.001; % how fast to adjust the deviation by key pressing,
 
 % parameters for visual cue
 VISUAL.headingDegree = TRIALINFO.headingDegree; % cell
-VISUAL.headingDegreeDelta = {0 20 -20 40 -40}; % delta degree for segregation condition 
+VISUAL.headingDegreeDelta = {0 20 -20 40 -40}; % delta degree for segregation condition
 
 VISUAL.headingDistance = TRIALINFO.headingDistance; % cell
 VISUAL.headingTime = TRIALINFO.headingTime; % cell
@@ -126,7 +129,7 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceDegree = {AUDITORY.sourceDegree};
 % AUDITORY.sourceLifeTimeSplit = 1;
 
- %a1 = -20.01; a2 = -20;
+%a1 = -20.01; a2 = -20;
 %a1 = 20; a2 = 20.01;
 %a1 = -0.01; a2 = 0.01;
 %AUDITORY.sourceNum = {2};
@@ -163,11 +166,10 @@ rng(seed,'twister');
 %% trial conditions and order
 calculateConditions();
 % TRIALINFO.trialConditions =
-% {visualDegree visualDistance visualTime, ...
-%       1               2               3
+% {1:visualDegree,  2:visualDistance,  3:visualTime, ...
 %
-% auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-%       4               5               6                7              8                9                  10
+% 4:auditoryDegree,  5:auditoryDistance,  6:auditoryTime, ...
+% 7:sourceNum,  8:sourceDegree(:),  9:sourceDistance(:),  10:sourceHead(:)}
 
 trialIndex = repmat(1:size(TRIALINFO.trialConditions,1),1,TRIALINFO.repetition);
 trialNum = size(trialIndex,2);
@@ -177,13 +179,13 @@ disp(['This block has  ' num2str(trialNum) ' trials']);
 
 timePredicted = (TRIALINFO.fixationPeriod + mean(cell2mat(TRIALINFO.headingTime)) + TRIALINFO.choicePeriod + ...
     TRIALINFO.intertrialInterval ) * trialNum;
-fprintf(1,'This block will cost  ');
-fprintf(2,[num2str(timePredicted/60) ' '] );
-fprintf(1,'minutes \n');
+fprintf(1,'This block will cost approximately ');
+fprintf(2,num2str(timePredicted/60));
+fprintf(1,' minutes \n');
 
 % auto-calibrate for Eyelink, temporarily not used
-% calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 % automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
+
 disp('Continue? Or press ESC to terminate.')
 
 % terminate the block if you feel it is too long
@@ -324,8 +326,6 @@ InitializeMatlabOpenAL(2);
 
 nsources = max(cell2mat(AUDITORY.sourceNum));
 
-muiltyInitialTime = linspace(0, max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration,nsources);
-
 % Generate one sound buffer:
 buffers = alGenBuffers(nsources);
 
@@ -349,23 +349,34 @@ if sources==0
     sources=sources+2;
 end
 sourceFileList = cell(nsources,1);
+
+% calculate for muilty sources' initial time
+muiltyInitialTime = linspace(0, max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration,nsources);
+
 for i = 1:nsources
     filei = mod(i,length(soundFiles))+1;
     soundName = fullfile(pwd,soundFiles(filei).name);
     sourceFileList{i} = soundFiles(filei).name;
     [fileSample,freq]= psychwavread(soundName);
+    
+    % if the sound duration is shorter than we need, repeat it.
     if size(fileSample,1)<freq*AUDITORY.sourceDuration
         fileSample = repmat(fileSample,ceil(freq*AUDITORY.sourceDuration/size(fileSample,1)),1);
     end
+    
+    % if the sound is two channel, merge to one channel
     if size(fileSample,2) == 2
         fileSample = (fileSample(1:round(AUDITORY.sourceDuration*freq),1)+fileSample(1:round(AUDITORY.sourceDuration*freq),2))/2;
     else
         fileSample = fileSample(1:round(AUDITORY.sourceDuration*freq));
     end
+    
+    % set lift, make sound slower increase and decrease so as not to make crackling sound
     initialAmp = linspace(0,1,freq*AUDITORY.sourceInitial);
     terminalAmp = linspace(1,0,freq*AUDITORY.sourceTerminal);
     fileSample(1:length(initialAmp)) = fileSample(1:length(initialAmp)).*initialAmp';
     fileSample(end-length(terminalAmp)+1:end) = fileSample(end-length(terminalAmp)+1:end).*terminalAmp';
+    
     myNoise  = [zeros(round(muiltyInitialTime(i)*freq),1);fileSample;zeros(round((max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration-muiltyInitialTime(i))*freq),1)];
     
     % Convert it...
@@ -377,18 +388,14 @@ for i = 1:nsources
     alSourceQueueBuffers(sources(i), 1, buffers(i));
     
     % Switch source to looping playback: It will repeat playing the buffer until its stopped.
-    alSourcei(sources(i), AL.LOOPING, AL.TRUE);
+    alSourcei(sources(i), AL.LOOPING, AL.FALSE);
     
     % Set emission volume to 100%, aka a gain of 1.0:
-    if nsources == 1
-        alSourcef(sources(i), AL.GAIN, 1);
-    else
-        if i == 1
-            alSourcef(sources(i), AL.GAIN, 1);
-        elseif i ==2
-            alSourcef(sources(i), AL.GAIN, 0.5);
-        end
-    end
+    % alSourcef(sources(i), AL.GAIN, 1);
+    % now we try to adjust the volume depends on the duration of sound, the longer the lower.
+    alSourcef(sources(i), AL.GAIN, 1*(1-sum(myNoise==0)/length(myNoise))); 
+    
+    alSource3f(sources(i), AL.DIRECTION, 0, 0, 0);
     alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
     alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
 end
@@ -449,8 +456,6 @@ while trialI < trialNum+1
     if soundPresent
         sourcePosition = cell(auditorySourcei{1},1);
         for i = 1:auditorySourcei{1}
-            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
-            
             zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
             xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
             sourcePosition{i} = [xPos, 0, zPos];
@@ -513,8 +518,6 @@ while trialI < trialNum+1
         if soundPresent
             if mod(framei,auditoryLifetimeF)==0 && framei~=frameNum
                 for i = 1:auditorySourcei{1}
-                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
-                    
                     zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
                     xPos = randi(sort(round((ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
                     sourcePosition{i} = [xPos, 0 ,zPos];
