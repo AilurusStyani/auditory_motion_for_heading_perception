@@ -13,16 +13,10 @@ global VISUAL
 inteCondition0 = {};
 % index0 = {};
 if any(ismember(TRIALINFO.intergration,0))
-    audiCon = cell(length(AUDITORY.sourceNum),4);
-    for i=1:length(AUDITORY.sourceNum)
-        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree(i),AUDITORY.sourceDistance(i),AUDITORY.sourceHeading{i}};
-    end
-    con0AtS = [sortrows(repmat(AUDITORY.headingTime',size(audiCon,1),1)),...
-        repmat(audiCon,length(AUDITORY.headingTime),1)];
-    con0AdAtS = [sortrows(repmat(AUDITORY.headingDistance',size(con0AtS,1),1)),...
-        repmat(con0AtS,length(AUDITORY.headingDistance),1)];
-    con0AS = [sortrows(repmat(AUDITORY.headingDegree',size(con0AdAtS,1),1)),...
-        repmat(con0AdAtS,length(AUDITORY.headingDegree),1)];
+    con0AdAt = [sortrows(repmat(AUDITORY.headingDistance',length(AUDITORY.headingTime),1)),...
+        repmat(AUDITORY.headingTime',length(AUDITORY.headingDistance),1)];
+    con0AS = [sortrows(repmat(AUDITORY.headingDegree',size(con0AdAt,1),1)),...
+        repmat(con0AdAt,length(AUDITORY.headingDegree),1)];
     
     con0VdVt = [sortrows(repmat(VISUAL.headingDistance',length(VISUAL.headingTime),1)),...
         repmat(VISUAL.headingTime',length(VISUAL.headingDistance),1)];
@@ -63,16 +57,10 @@ end
 inteCondition1 = {};
 % index1 = [];
 if any(ismember(TRIALINFO.intergration,1))
-    audiCon = cell(length(AUDITORY.sourceNum),4);
-    for i=1:length(AUDITORY.sourceNum)
-        audiCon(i,:) = {AUDITORY.sourceNum{i},AUDITORY.sourceDegree(i),AUDITORY.sourceDistance(i),AUDITORY.sourceHeading{i}};
-    end
-    con1AtS = [sortrows(repmat(TRIALINFO.headingTime',size(audiCon,1),1)),...
-        repmat(audiCon,length(TRIALINFO.headingTime),1)];
-    con1AdAtS = [sortrows(repmat(TRIALINFO.headingDistance',size(con1AtS,1),1)),...
-        repmat(con1AtS,length(TRIALINFO.headingDistance),1)];
-    con1AS = [sortrows(repmat(TRIALINFO.headingDegree',size(con1AdAtS,1),1)),...
-        repmat(con1AdAtS,length(TRIALINFO.headingDegree),1)];
+    con1AdAt = [sortrows(repmat(AUDITORY.headingDistance',length(AUDITORY.headingTime),1)),...
+        repmat(AUDITORY.headingTime',length(AUDITORY.headingDistance),1)];
+    con1AS = [sortrows(repmat(TRIALINFO.headingDegree',size(con1AdAt,1),1)),...
+        repmat(con1AdAt,length(TRIALINFO.headingDegree),1)];
     
     con1VdVt = [sortrows(repmat(TRIALINFO.headingDistance',length(TRIALINFO.headingTime),1)),...
         repmat(TRIALINFO.headingTime',length(TRIALINFO.headingDistance),1)];
