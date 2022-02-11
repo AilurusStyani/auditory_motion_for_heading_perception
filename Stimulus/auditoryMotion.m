@@ -124,7 +124,6 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 %     AUDITORY.sourceDegree = [AUDITORY.sourceDegree;addingDeg];
 % end
 % AUDITORY.sourceDegree = {AUDITORY.sourceDegree};
-% AUDITORY.sourceLifeTimeSplit = 1;
 
 %   a1 = -5; a2 = -10;
 % %a1 = 20; a2 = 20.01;
@@ -137,12 +136,13 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceLifeTimeSplit = 1;
 
  a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
- AUDITORY.sourceNum     = {2};
- AUDITORY.sourceHeading = {[180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
- AUDITORY.sourceDistance = {0.3*coordinateMuilty,0.3*coordinateMuilty};%{[-2.7*coordinateMuilty,-2.7*coordinateMuilty;-1.7*coordinateMuilty,-1.7*coordinateMuilty;-0.7*coordinateMuilty,-0.7*coordinateMuilty;0.30*coordinateMuilty,0.30*coordinateMuilty]}; % m
- AUDITORY.sourceDegree = {[a2,a1;a3,a4]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
- AUDITORY.sourceLifeTimeSplit =1;%cell2mat(AUDITORY.sourceNum);
-
+ AUDITORY.synSourceNum = {2,3};
+ AUDITORY.sourceStage = {3,5};
+ AUDITORY.sourceHeading = {[180,180],[180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+ AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty],[0.3*coordinateMuilty,0.4*coordinateMuilty,0.5*coordinateMuilty]};% m
+ AUDITORY.sourceDegree = {[a2,a1;a3,a4],[a2,a1;a3,a4;a2,a1]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+ AUDITORY.sourceNum = cellfun(@times, AUDITORY.synSourceNum, AUDITORY.sourceStage, 'UniformOutput',0);
+ 
 % parameter for coherence
 AUDITORY.coherence =1; % the influenced sources number = round( (1-coherence) * courceNum )
 AUDITORY.coherenceDirection = 1; % 0 random, 1 same as heading side in x axis
@@ -151,10 +151,15 @@ AUDITORY.coherenceVelocity = 2; % how many times of the heading velocity in x-ax
 % parameter for lift time
 AUDITORY.sourceInitial = 0.03; % second
 AUDITORY.sourceTerminal = 0.03; % second
-AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime))/2; % second
+% AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime))/2; % second
+sourceOverlap = 0.1;
+AUDITORY.sourceDuration = cell2mat(AUDITORY.headingTime)./cell2mat(AUDITORY.sourceStage)+sourceOverlap;
 
 if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>AUDITORY.sourceDuration
     error('Invalid number for sourceInitial, sourceTerminal or sourceDuration.')
+end
+if any(AUDITORY.sourceDuration>cell2mat(AUDITORY.headingTime))
+    error('Invalid source duration, please check parameters about AUDITORY and sourceOverlap.');
 end
 
 % random seed
@@ -165,10 +170,12 @@ rng(seed,'twister');
 calculateConditions();
 % TRIALINFO.trialConditions =
 % {visualDegree visualDistance visualTime, ...
-%       1               2               3
+%       1                        2                       3
 %
-% auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-%       4               5               6                7              8                9                  10
+% auditoryDegree    auditoryDistance     auditoryTime      sourceNum      sourceDegree(:)
+%       4                                 5                                  6                          7                       8
+% sourceDistance(:)  sourceHeading(:)  synSourceNum  sourceStage  sourceDuration(:)}
+%       9                                10                              11                     12                   13
 
 trialIndex = repmat(1:size(TRIALINFO.trialConditions,1),1,TRIALINFO.repetition);
 trialNum = size(trialIndex,2);
@@ -378,7 +385,6 @@ for i = 1:nsources
     % Attach our buffer to it: The source will play the buffers sound data.
     alSourceQueueBuffers(sources(i), 1, buffers(i));
     
-    % Switch source to looping playback: It will repeat playing the buffer until its stopped.
     alSourcei(sources(i), AL.LOOPING, AL.FALSE);
     
     % Set emission volume to 100%, aka a gain of 1.0:
@@ -413,20 +419,26 @@ while trialI < trialNum+1
     
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
-    %       1                           2                        3
+    %       1                        2                       3
     %
-    % auditoryDegree auditoryDistance auditoryTime ...
-    %       4                                   5                           6
-    %
-    % sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-    %       7                      8                                  9                         10
+    % auditoryDegree    auditoryDistance     auditoryTime      sourceNum      sourceDegree(:)
+    %       4                                 5                                  6                          7                       8
+    % sourceDistance(:)  sourceHeading(:)  synSourceNum  sourceStage  sourceDuration(:)}
+    %       9                                10                              11                     12                   13
     
     conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
     visualHeadingi = cell2mat(conditioni(1:3));
     auditoryHeadingi = cell2mat(conditioni(4:6));
-    auditorySourcei = conditioni(7:10);
+    % auditoryDegree    auditoryDistance     auditoryTime
+    
+    auditorySourcei = conditioni(7:13);
+    % sourceNum           sourceDegree(:)      sourceDistance(:)  
+    %           1                               2                            3
+    % sourceHeading(:)  synSourceNum      sourceStage  sourceDuration(:)
+    %           4                               5                            6                        7
+    
     visualPresent = ~any(isnan(visualHeadingi));
-    soundPresent = ~isnan(auditorySourcei{end}(i));
+    soundPresent = ~isnan(auditorySourcei{4}(i));
     
     if visualPresent
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
@@ -452,7 +464,7 @@ while trialI < trialNum+1
     if soundPresent
         sourcePosition = cell(auditorySourcei{1},1);
         for i = 1:auditorySourcei{1}
-            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{4}(i)), 0, -cosd(auditorySourcei{4}(i)));
             
             zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
             xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
@@ -516,7 +528,7 @@ while trialI < trialNum+1
         if soundPresent
             if mod(framei,auditoryLifetimeF)==0 && framei~=frameNum
                 for i = 1:auditorySourcei{1}
-                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{4}(i)), 0, -cosd(auditorySourcei{4}(i)));
                     
                     zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
                     xPos = randi(sort(round((ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
