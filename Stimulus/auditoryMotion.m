@@ -52,10 +52,10 @@ feedbackDuration = 1; % unit s
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      =10;
-% TRIALINFO.headingDegree   = {-15,-10,-5,-1,1,5,10,15};
-TRIALINFO.headingDegree   = {-90,-45,0,45,90};
+ TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
+%TRIALINFO.headingDegree   = {-90,-45,0,45,90};
 TRIALINFO.headingDistance = {0.3*coordinateMuilty};
-TRIALINFO.headingTime      = {5}; % second
+TRIALINFO.headingTime      = {1}; % second
 TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.choicePeriod        = 2; % second
@@ -135,13 +135,29 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 % AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.31*coordinateMuilty]}; % m
 % AUDITORY.sourceDegree = {[a2,a1]}; % degree for position
 % AUDITORY.sourceLifeTimeSplit = 1;
+%-----------------------Original Ver------------------
+%  a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+%  AUDITORY.synSourceNum = {2,3};
+%  AUDITORY.sourceStage = {[1 3],[4 2 1]};
+%  AUDITORY.sourceHeading = {[180,180],[180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+%  AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty],[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};% m
+%  AUDITORY.sourceDegree = {[a2,a1;a3,a4],[a2,a1;a3,a4;0,0]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+%  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
+%------------------------For test---------------------
+% a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+%  AUDITORY.synSourceNum = {1};
+%  AUDITORY.sourceStage = {[5]};
+%  AUDITORY.sourceHeading = {[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+%  AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty]};
+%  AUDITORY.sourceDegree = {[-20,20]};
+%  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
 
- a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
- AUDITORY.synSourceNum = {2,3};
- AUDITORY.sourceStage = {[1 3],[4 2 1]};
- AUDITORY.sourceHeading = {[180,180],[180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
- AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty],[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};% m
- AUDITORY.sourceDegree = {[a2,a1;a3,a4],[a2,a1;a3,a4;0,0]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+ a1 = -10; a2=-15.1 ;a3=10;a4=15.1 ; a5=15; a6=20; a7=-16; a8=-12; a9=5; a10=10;a11=-20;a12=-30;a13=20;a14=30;a15=-9;a16=7;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+ AUDITORY.synSourceNum = {5};
+ AUDITORY.sourceStage = {[5 5 5 5 5]};
+ AUDITORY.sourceHeading = {[180,180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+ AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};% m
+ AUDITORY.sourceDegree = {[-20,20;-20,20;-20,20;-20,20;-20,20]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
  
 % parameter for coherence
@@ -150,10 +166,10 @@ AUDITORY.coherenceDirection = 1; % 0 random, 1 same as heading side in x axis
 AUDITORY.coherenceVelocity = 2; % how many times of the heading velocity in x-axis component
 
 % parameter for lift time
-AUDITORY.sourceInitial = 0.03; % second
-AUDITORY.sourceTerminal = 0.03; % second
+AUDITORY.sourceInitial = 0.01; % second
+AUDITORY.sourceTerminal = 0.01; % second
 % AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime))/2; % second
-sourceOverlap = [0.1 0.15 0.2];
+sourceOverlap = [0 0 0 0 0];
 for i = 1:length(AUDITORY.sourceStage)
     AUDITORY.sourceDuration{i} = cell2mat(AUDITORY.headingTime)./AUDITORY.sourceStage{i}+sourceOverlap(1:length(AUDITORY.sourceStage{i}))./AUDITORY.sourceStage{i}.*(AUDITORY.sourceStage{i}-1);    
 end
@@ -460,7 +476,7 @@ while trialI < trialNum+1
                 %             alSourcef(sources(i), AL.GAIN, 0.5);
                 %         end
                 %     end
-                alSourcef(sources(i), AL.GAIN, 0.1);
+                alSourcef(sources(i), AL.GAIN, 0.2);
                 alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
                 alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
             end
