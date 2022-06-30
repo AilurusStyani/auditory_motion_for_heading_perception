@@ -439,8 +439,9 @@ while trialI < trialNum+1
             end
             
             sourceFileList = cell(nsources,1);
+            joker = randi(length(soundFiles)); % add a random sound file initial number
             for i = 1:nsources
-                filei = mod(i,length(soundFiles))+1;
+                filei = mod(i,length(soundFiles)+joker)+1;
                 soundName = fullfile(pwd,soundFiles(filei).name);
                 sourceFileList{i} = soundFiles(filei).name;
                 [fileSample,freq]= psychwavread(soundName);
