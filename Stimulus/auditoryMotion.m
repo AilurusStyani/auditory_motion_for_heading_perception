@@ -390,11 +390,11 @@ while trialI < trialNum+1
     auditoryHeadingi = cell2mat(conditioni(4:6));
     % auditoryDegree    auditoryDistance     auditoryTime
     
-    if exist('auditorySourcei','var') && isequal(auditorySourcei([1,5:7]),conditioni([7,11:13]))
-        bypassSourceGenerate = true;
-    else
-        bypassSourceGenerate = false;
-    end
+%     if exist('auditorySourcei','var') && isequal(auditorySourcei([1,5:7]),conditioni([7,11:13]))
+%         bypassSourceGenerate = true;
+%     else
+%         bypassSourceGenerate = false;
+%     end
     
     auditorySourcei = conditioni(7:13);
     % sourceNum           sourceDegree{(:)}      sourceDistance{(:)}
@@ -412,7 +412,9 @@ while trialI < trialNum+1
     end
     
     if soundPresent
-        if ~bypassSourceGenerate
+        %         if ~bypassSourceGenerate
+        if true
+            
             nsources = auditorySourcei{1};
             
             muiltyInitialTime = [];
