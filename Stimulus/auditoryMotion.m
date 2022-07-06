@@ -152,7 +152,7 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 %  AUDITORY.sourceDegree = {[-20,20]};
 %  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
 
- a1 = -10; a2=-15.1 ;a3=10;a4=15.1 ; a5=15; a6=20; a7=-16; a8=-12; a9=5; a10=10;a11=-20;a12=-30;a13=20;a14=30;a15=-9;a16=7;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+%  a1 = -10; a2=-15.1 ;a3=10;a4=15.1 ; a5=15; a6=20; a7=-16; a8=-12; a9=5; a10=10;a11=-20;a12=-30;a13=20;a14=30;a15=-9;a16=7;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
  AUDITORY.synSourceNum = {5};
  AUDITORY.sourceStage = {[5 5 5 5 5]};
  AUDITORY.sourceHeading = {[180,180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
@@ -390,11 +390,11 @@ while trialI < trialNum+1
     auditoryHeadingi = cell2mat(conditioni(4:6));
     % auditoryDegree    auditoryDistance     auditoryTime
     
-    if exist('auditorySourcei','var') && isequal(auditorySourcei([1,5:7]),conditioni([7,11:13]))
-        bypassSourceGenerate = true;
-    else
-        bypassSourceGenerate = false;
-    end
+%     if exist('auditorySourcei','var') && isequal(auditorySourcei([1,5:7]),conditioni([7,11:13]))
+%         bypassSourceGenerate = true;
+%     else
+%         bypassSourceGenerate = false;
+%     end
     
     auditorySourcei = conditioni(7:13);
     % sourceNum           sourceDegree{(:)}      sourceDistance{(:)}
@@ -412,7 +412,7 @@ while trialI < trialNum+1
     end
     
     if soundPresent
-        if ~bypassSourceGenerate
+        if true%~bypassSourceGenerate
             nsources = auditorySourcei{1};
             
             muiltyInitialTime = [];
@@ -441,7 +441,7 @@ while trialI < trialNum+1
             sourceFileList = cell(nsources,1);
             joker = randi(length(soundFiles)); % add a random sound file initial number
             for i = 1:nsources
-                filei = mod(i,length(soundFiles)+joker)+1;
+                filei = mod(i+joker,length(soundFiles))+1;
                 soundName = fullfile(pwd,soundFiles(filei).name);
                 sourceFileList{i} = soundFiles(filei).name;
                 [fileSample,freq]= psychwavread(soundName);
@@ -658,6 +658,7 @@ while trialI < trialNum+1
         
         frameTime(framei) = GetSecs - frameTI;
         frameTI = GetSecs;
+        
     end
     
     
@@ -757,7 +758,26 @@ while trialI < trialNum+1
             Eyelink('message', ['Trial repeat ' num2str(trialI)]);
         end
     end
-    pause(TRIALINFO.intertrialInterval);
+    tti = tic;
+    if soundPresent
+        if true%~bypassSourceGenerate
+            % Delete buffer:
+            try
+                alDeleteBuffers(nsources, buffers);
+            catch
+            end
+            
+            % Wait a bit:
+            pause(0.1);
+            
+            % Delete sources:
+            try
+                alDeleteSources(nsources, sources);
+            catch
+            end
+        end
+    end
+    pause(TRIALINFO.intertrialInterval-toc(tti));
 end
 
 
