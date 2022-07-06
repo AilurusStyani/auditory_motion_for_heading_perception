@@ -370,6 +370,7 @@ conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
 sourceLocation= cell(trialNum,max(cell2mat(AUDITORY.sourceNum)));
 
 trialI = 1;
+sourceFileList = cell(100,trialNum);
 while trialI < trialNum+1
     [~, ~, keyCode]=KbCheck;
     if keyCode(escape)
@@ -412,13 +413,7 @@ while trialI < trialNum+1
     end
     
     if soundPresent
-<<<<<<< HEAD
         if true%~bypassSourceGenerate
-=======
-        %         if ~bypassSourceGenerate
-        if true
-            
->>>>>>> 08e56e11a4fd130ce9a3ec00f14dbcf8ccae117a
             nsources = auditorySourcei{1};
             
             muiltyInitialTime = [];
@@ -444,12 +439,13 @@ while trialI < trialNum+1
                 sources=sources+2;
             end
             
-            sourceFileList = cell(nsources,1);
+            %sourceFileList = cell(nsources,trialNum);
             joker = randi(length(soundFiles)); % add a random sound file initial number
+       
             for i = 1:nsources
                 filei = mod(i+joker,length(soundFiles))+1;
                 soundName = fullfile(pwd,soundFiles(filei).name);
-                sourceFileList{i} = soundFiles(filei).name;
+                sourceFileList{i,trialI} = soundFiles(filei).name;
                 [fileSample,freq]= psychwavread(soundName);
                 %     if size(fileSample,1)<freq*AUDITORY.sourceDuration
                 %         fileSample = repmat(fileSample,ceil(freq*AUDITORY.sourceDuration/size(fileSample,1)),1);
