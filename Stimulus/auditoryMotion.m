@@ -412,7 +412,13 @@ while trialI < trialNum+1
     end
     
     if soundPresent
+<<<<<<< HEAD
         if true%~bypassSourceGenerate
+=======
+        %         if ~bypassSourceGenerate
+        if true
+            
+>>>>>>> 08e56e11a4fd130ce9a3ec00f14dbcf8ccae117a
             nsources = auditorySourcei{1};
             
             muiltyInitialTime = [];
