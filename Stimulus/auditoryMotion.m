@@ -365,8 +365,8 @@ while trialI < trialNum+1
             
             initialAmp = linspace(0,1,freq*AUDITORY.sourceInitial);
             terminalAmp = linspace(1,0,freq*AUDITORY.sourceTerminal);
-            fileSample(1:length(initialAmp)) = fileSample(1:length(initialAmp)).*initialAmp';
-            fileSample(end-length(terminalAmp)+1:end) = fileSample(end-length(terminalAmp)+1:end).*terminalAmp';
+            fileSample(1:length(initialAmp),:) = fileSample(1:length(initialAmp),:).*initialAmp';
+            fileSample(end-length(terminalAmp)+1:end,:) = fileSample(end-length(terminalAmp)+1:end,:).*terminalAmp';
             myNoise  = [zeros(round(muiltyInitialTime(i)*freq),1);fileSample;zeros(round((max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration-muiltyInitialTime(i))*freq),1)];
             
             % Convert it...
