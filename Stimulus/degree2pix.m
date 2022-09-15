@@ -4,9 +4,10 @@ function pixel = degree2pix(degree,dir)
 % On X axis: dir = 1; On Y axis: dir = 2
 global SCREEN
 
+a=SCREEN.widthPix / SCREEN.widthM;
+b=SCREEN.heightPix / SCREEN.heightM;
+
 if nargin == 1
-    a=SCREEN.widthPix / SCREEN.widthM;
-    b=SCREEN.heightPix / SCREEN.heightM;
     if abs(a-b)/min(a,b) < 0.05
         length = tand(degree) * SCREEN.distance;
         pixel = length / SCREEN.widthM * SCREEN.widthPix;
