@@ -32,9 +32,11 @@ if any(ismember(TRIALINFO.intergration,0))
     
     % visual only
     con0T0 = cat(2,con0V,num2cell(nan(size(con0V,1),size(con0AS,2))));
+    con0T0 = repmat(con0T0,TRIALINFO.unisensoryRatio(1),1);
     
     % auditory only
     con0T1 = cat(2,num2cell(nan(size(con0AS,1),size(con0V,2))),con0AS);
+    con0T1 = repmat(con0T1,TRIALINFO.unisensoryRatio(2),1);
     
     % both provided
     con0T2={};
@@ -74,9 +76,11 @@ if any(ismember(TRIALINFO.intergration,1))
     
     % visual only
     con1T0 = cat(2,con1V,num2cell(nan(size(con1V,1),size(con1AS,2))));
+    con1T0 = repmat(con1T0,TRIALINFO.unisensoryRatio(1),1);
     
     % auditory only
     con1T1 = cat(2,num2cell(nan(size(con1AS,1),size(con1V,2))),con1AS);
+    con1T1 = repmat(con1T1,TRIALINFO.unisensoryRatio(2),1);
     
     % both provided
     con1T2 = cat(2,con1AS(:,1:3),con1AS);

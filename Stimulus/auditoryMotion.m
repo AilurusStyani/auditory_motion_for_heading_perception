@@ -56,6 +56,7 @@ TRIALINFO.repetition      =8;
 TRIALINFO.headingDistance = {1*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [0]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.unisensoryRatio  = [1,2];
 
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
@@ -198,6 +199,14 @@ if any(max(cell2mat(AUDITORY.sourceDuration))>cell2mat(AUDITORY.headingTime))
     error('Invalid source duration, please check parameters about AUDITORY and sourceOverlap.');
 end
 %end
+
+% do not modify follows unless you know what it is
+if ~isequal(ismember([0 1], TRIALINFO.stimulusType), [1 1])
+    TRIALINFO.unisensoryRatio = [1,1];
+end
+if any(mod(TRIALINFO.unisensoryRatio,1)~=0) || length(TRIALINFO.unisensoryRatio)~=2 || any(TRIALINFO.unisensoryRatio<=0)
+    error('Invalid input for TRIALINFO.unisensoryRatio, it must be two-digit matrix and include non-zero natural numbers.')
+end
 
 % random seed
 seed = str2double(datestr(now,'yymmddHHMM'));
