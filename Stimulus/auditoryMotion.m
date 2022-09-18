@@ -55,7 +55,8 @@ TRIALINFO.repetition      =10;
 TRIALINFO.headingDegree   = {-15,15};
 TRIALINFO.headingDistance = {0.3*coordinateMuilty};
 TRIALINFO.headingTime      = {1}; % second
-TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [1 2 0]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.unisensoryRatio = [1,2]; % trial number of visual only vs auditory only
 
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
@@ -116,6 +117,14 @@ AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime)); % second
 
 if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>AUDITORY.sourceDuration
     error('Invalid number for sourceInitial, sourceTerminal or sourceDuration.')
+end
+
+% do not modifi follows unless you know what it is
+if ~isequal(ismember([0 1], TRIALINFO.stimulusType), [1 1])
+    TRIALINFO.unisensoryRatio = [1,1];
+end
+if any(mod(TRIALINFO.unisensoryRatio,1)~=0) || length(TRIALINFO.unisensoryRatio)~=2
+    error('Invalid input for TRIALINFO.unisensoryRatio, it must be non-zero natural numbers and two-digit matrix.')
 end
 
 % random seed
