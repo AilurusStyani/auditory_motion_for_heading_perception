@@ -6,7 +6,7 @@
 % 1. Eyelink
 % 2. Audio-visual both provided segregation condition
 CloseOpenAL;
-clear TRIALINFO SCREEN AUDITORY VISUAL GL FRUSTUM STARDATA AL
+clear all STARDATA
 close all
 
 global TRIALINFO
@@ -48,15 +48,15 @@ pageDown = KbName('pagedown'); % decrease binocular deviation
 eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
-
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
-TRIALINFO.repetition      =10;
-TRIALINFO.headingDegree   = {-15,15};
-TRIALINFO.headingDistance = {0.3*coordinateMuilty};
-TRIALINFO.headingTime      = {1}; % second
-TRIALINFO.stimulusType     = [1 2 0]; % 0 for visual only, 1 for auditory only, 2 for both provided
-TRIALINFO.unisensoryRatio = [1,2]; % trial number of visual only vs auditory only
+TRIALINFO.repetition      =8;
+ TRIALINFO.headingDegree   = {-18,18,-12,12,-8,8,-3,3};
+%TRIALINFO.headingDegree   = {-90,-45,0,45,90};
+TRIALINFO.headingDistance = {1*coordinateMuilty};
+TRIALINFO.headingTime      = {2}; % second
+TRIALINFO.stimulusType     = [0]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.unisensoryRatio  = [1,2];
 
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
@@ -84,9 +84,9 @@ VISUAL.fixationSizeD  = 0.5;  % degree
 VISUAL.fixationWindow = 2; % degree
 
 VISUAL.density   = 300;    % num/m^3
-VISUAL.coherence = 0.5; % in percent
+VISUAL.coherence = 1; % in percent
 VISUAL.probability = VISUAL.coherence;
-VISUAL.lifeTime  = 3; % frame number
+VISUAL.lifeTime  = 5; % frame number
 
 VISUAL.starSize = 0.1;    % degree
 
@@ -98,26 +98,107 @@ AUDITORY.headingDistance = TRIALINFO.headingDistance; % cell
 AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 
 % % sample currently not work for double sources.
-a1 = -10; a2=-10.1 ;a3=10;a4=10.1;a5=30;a6=30.01;a7=5;a8=5.01;a9=25;a10=25.01;
-AUDITORY.sourceNum     = {20};
-AUDITORY.sourceHeading = {[180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
-AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};%{[-2.7*coordinateMuilty,-2.7*coordinateMuilty;-1.7*coordinateMuilty,-1.7*coordinateMuilty;-0.7*coordinateMuilty,-0.7*coordinateMuilty;0.30*coordinateMuilty,0.30*coordinateMuilty]}; % m
-AUDITORY.sourceDegree = {[-25,-24.9;-22.5,-22.4;-20,-19.9;-17.5,-17.4;-15,-14.9;-12.5,-12.4;-10,-9.9;-7.5,-7.4;-5,-4.9;-2.5,-2.4;2.4,2.5;4.9,5;7.4,7.5;9.9,10;12.4,12.5;14.9,15;17.4,17.5;19.9,20;22.4,22.5;24.9,25]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
-AUDITORY.sourceLifeTimeSplit =1;%cell2mat(AUDITORY.sourceNum);
 
+% sourceNum = 10;
+% sourceHeading = 180;
+% sourceDistance = [0.1*coordinateMuilty,0.3*coordinateMuilty];
+% maxDeg = 60;
+% maxHeadingDeg = 20;
+%
+% AUDITORY.sourceNum     = {sourceNum};
+% AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% for i = 1:sourceNum-1
+%     AUDITORY.sourceHeading{end+1} = sourceHeading;
+% end
+% AUDITORY.sourceDistance = sourceDistance;
+% for i = 1:sourceNum-1
+%     AUDITORY.sourceDistance = [AUDITORY.sourceDistance;sourceDistance];
+% end
+% AUDITORY.sourceDistance = {AUDITORY.sourceDistance};
+%
+% AUDITORY.sourceDegree = [-maxHeadingDeg-0.01,-maxHeadingDeg;maxHeadingDeg,maxHeadingDeg+0.01];
+% for i = 1:sourceNum/2-1
+%     baseDeg = maxHeadingDeg + i*(maxDeg - maxHeadingDeg)/(sourceNum/2);
+%     addingDeg = [baseDeg,baseDeg+0.01];
+%     AUDITORY.sourceDegree = [AUDITORY.sourceDegree;addingDeg];
+%     addingDeg = [-baseDeg-0.01,baseDeg];
+%     AUDITORY.sourceDegree = [AUDITORY.sourceDegree;addingDeg];
+% end
+% AUDITORY.sourceDegree = {AUDITORY.sourceDegree};
+
+%   a1 = -5; a2 = -10;
+% %a1 = 20; a2 = 20.01;
+% %a1 = -0.01; a2 = 0.01;
+% 
+% AUDITORY.sourceNum = {1};
+% AUDITORY.sourceHeading = {180}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+% AUDITORY.sourceDistance = {[0.2*coordinateMuilty,0.21*coordinateMuilty]}; % m
+% AUDITORY.sourceDegree = {[-10,10]}; % degree for position
+% AUDITORY.sourceLifeTimeSplit = 4;
+%-----------------------Original Ver------------------
+%  a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+%  AUDITORY.synSourceNum = {2,3};
+%  AUDITORY.sourceStage = {[1 3],[4 2 1]};
+%  AUDITORY.sourceHeading = {[180,180],[180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+%  AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty],[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};% m
+%  AUDITORY.sourceDegree = {[a2,a1;a3,a4],[a2,a1;a3,a4;0,0]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+%  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
+%------------------------For test---------------------
+% a1 = -10; a2=-10.1 ;a3=10;a4=10.1;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
+%  AUDITORY.synSourceNum = {1};
+%  AUDITORY.sourceStage = {[1]};
+%  AUDITORY.sourceHeading = {[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+%  AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.31*coordinateMuilty]};
+%  AUDITORY.sourceDegree = {[-30,30]};
+%  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
+
+
+ AUDITORY.synSourceNum = {30};
+ AUDITORY.sourceStage = {[3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3]};
+ AUDITORY.sourceHeading = {[180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+ AUDITORY.sourceDistance = {[0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;
+                                  0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;
+                                  0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;0.2*coordinateMuilty,0.21*coordinateMuilty;
+                                  0.2*coordinateMuilty,0.21*coordinateMuilty;
+                                  -0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;
+                                  -0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;
+                                  -0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;-0.2*coordinateMuilty,-0.21*coordinateMuilty;
+                                  -0.2*coordinateMuilty,-0.21*coordinateMuilty;
+                                  0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;
+                                  0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;
+                                  0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;0.0*coordinateMuilty,0.1*coordinateMuilty;
+                                  0.0*coordinateMuilty,0.1*coordinateMuilty;]};% m
+ AUDITORY.sourceDegree = {[-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;
+                                -30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;
+                                -30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;-30,30;]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+%  AUDITORY.sourceDegree = {[-30,-29;-24,-23;-18,-17;-12,-11;-6,-5;5,6;11,12;17,18;23,24;29,30;
+%                                 -30,-29;-24,-23;-18,-17;-12,-11;-6,-5;5,6;11,12;17,18;23,24;29,30;
+%                                 -30,-29;-24,-23;-18,-17;-12,-11;-6,-5;5,6;11,12;17,18;23,24;29,30;]};                           
+ AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
+%  
 % parameter for coherence
-AUDITORY.coherence =0.8; % the influenced sources number = round( (1-coherence) * courceNum )
-AUDITORY.coherenceDirection = 0; % 0 random, 1 same as heading side in x axis
-AUDITORY.coherenceVelocity = 1; % how many times of the heading velocity in x-axis component
+AUDITORY.coherence =1; % the influenced sources number = round( (1-coherence) * courceNum )
+AUDITORY.coherenceDirection = 1; % 0 random, 1 same as heading side in x axis
+AUDITORY.coherenceVelocity = 2; % how many times of the heading velocity in x-axis component
 
 % parameter for lift time
-AUDITORY.sourceInitial = 0.03; % second
-AUDITORY.sourceTerminal = 0.03; % second
-AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime)); % second
+AUDITORY.sourceInitial = 0.01; % second
+AUDITORY.sourceTerminal = 0.01; % second
+%AUDITORY.sourceDuration = max(cell2mat(AUDITORY.headingTime))/2; % second
+% sourceOverlap = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0];
+sourceOverlap = [-0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2 -0.2];
+%if TRIALINFO.stimulusType     == [1]||TRIALINFO.stimulusType     == [2]
+for i = 1:length(AUDITORY.sourceStage)
+    AUDITORY.sourceDuration{i} = cell2mat(AUDITORY.headingTime)./AUDITORY.sourceStage{i}+sourceOverlap(1:length(AUDITORY.sourceStage{i}))./AUDITORY.sourceStage{i}.*(AUDITORY.sourceStage{i}-1);    
+end
 
-if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>AUDITORY.sourceDuration
+if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>min(cell2mat(AUDITORY.sourceDuration))
     error('Invalid number for sourceInitial, sourceTerminal or sourceDuration.')
 end
+if any(max(cell2mat(AUDITORY.sourceDuration))>cell2mat(AUDITORY.headingTime))
+    error('Invalid source duration, please check parameters about AUDITORY and sourceOverlap.');
+end
+%end
 
 % do not modify follows unless you know what it is
 if ~isequal(ismember([0 1], TRIALINFO.stimulusType), [1 1])
@@ -135,10 +216,12 @@ rng(seed,'twister');
 calculateConditions();
 % TRIALINFO.trialConditions =
 % {visualDegree visualDistance visualTime, ...
-%       1               2               3
+%       1                        2                       3
 %
-% auditoryDegree auditoryDistance auditoryTime sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-%       4               5               6                7              8                9                  10
+% auditoryDegree    auditoryDistance     auditoryTime      sourceNum   sourceDegree{(:)}
+%       4                                 5                                  6                          7                       8
+% sourceDistance{(:)}  sourceHeading{(:)}  synSourceNum  sourceStage{(:)}  sourceDuration{(:)}
+%       9                                10                               11                        12                      13
 
 trialIndex = repmat(1:size(TRIALINFO.trialConditions,1),1,TRIALINFO.repetition);
 trialNum = size(trialIndex,2);
@@ -152,9 +235,10 @@ fprintf(1,'This block will cost  ');
 fprintf(2,[num2str(timePredicted/60) ' '] );
 fprintf(1,'minutes \n');
 
-% auto-calibrate for Eyelink, temporarily not used
+% % auto-calibrate for Eyelink, temporarily not used
 % calibrationInterval = 600; % unit second, it is better to re-calibration every 10-15 minutes
 % automaticCalibration = timePredicted > 1.3*calibrationInterval; % make automatic calibration (every 10 min in default) if the block takes more than 15 min.
+
 disp('Continue? Or press ESC to terminate.')
 
 % terminate the block if you feel it is too long
@@ -209,7 +293,6 @@ VISUAL.dimensionY = SCREEN.heightM/SCREEN.distance*FRUSTUM.clipFar;
 
 [VISUAL.dimensionX, VISUAL.dimensionZ] = generateDimensionField(AUDITORY.headingDistance,...
     VISUAL.headingDegree,FRUSTUM.checkLeft,FRUSTUM.checkRight,FRUSTUM.clipFar);
-auditoryLifetimeF = calculateAuditoryLifetime(AUDITORY.headingTime,AUDITORY.sourceLifeTimeSplit,SCREEN.refreshRate);
 
 Screen('BeginOpenGL', win);
 glViewport(0, 0, RectWidth(winRect), RectHeight(winRect));
@@ -292,26 +375,30 @@ end
 
 %% initial openal
 % Initialize OpenAL subsystem at debuglevel 2 with the default output device:
-
 InitializeMatlabOpenAL(2);
 
-nsources = max(cell2mat(AUDITORY.sourceNum));
+% Query for errors:
+alGetString(alGetError)
 
-muiltyInitialTime = linspace(0, max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration,nsources);
+soundFiles = dir(fullfile(pwd,'*.wav'));
 
+alListenerfv(AL.VELOCITY, [0, 0,-1]);
+alListenerfv(AL.POSITION, [0, 0, 0]);
+alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
+
+% the other part of openal is in trial loop
+
+%% trial start
 HideCursor(SCREEN.screenId);
 
 choice = zeros(trialNum,2);
 choiceTime = nan(trialNum,2);
 conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
-sourceLocation= cell(trialNum,nsources);
+sourceLocation= cell(trialNum,max(cell2mat(AUDITORY.sourceNum)));
 
-%% trial start
 trialI = 1;
-sourceFileList = cell(nsources,trialNum);
-
+sourceFileList = cell(cell2mat(AUDITORY.sourceNum),trialNum);
 while trialI < trialNum+1
-    
     [~, ~, keyCode]=KbCheck;
     if keyCode(escape)
         break
@@ -319,18 +406,30 @@ while trialI < trialNum+1
     
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
-    %       1                           2                        3
+    %       1                        2                       3
     %
-    % auditoryDegree auditoryDistance auditoryTime ...
-    %       4                                   5                           6
-    %
-    % sourceNum sourceDegree(:) sourceDistance(:) sourceHead(:)}
-    %       7                      8                                  9                         10
+    % auditoryDegree    auditoryDistance     auditoryTime      sourceNum   sourceDegree(:)
+    %       4                                 5                                  6                          7                       8
+    % sourceDistance{(:)}  sourceHeading{(:)}   synSourceNum sourceStage   sourceDuration{(:)}
+    %       9                                10                                11                          12                      13
     
     conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
     visualHeadingi = cell2mat(conditioni(1:3));
     auditoryHeadingi = cell2mat(conditioni(4:6));
-    auditorySourcei = conditioni(7:10);
+    % auditoryDegree    auditoryDistance     auditoryTime
+    
+    if exist('auditorySourcei','var') && isequal(auditorySourcei([1,5:7]),conditioni([7,11:13]))
+        bypassSourceGenerate = true;
+    else
+        bypassSourceGenerate = false;
+    end
+    
+    auditorySourcei = conditioni(7:13);
+    % sourceNum           sourceDegree{(:)}      sourceDistance{(:)}
+    %           1                                2                                3
+    % sourceHeading{(:)}   synSourceNum      sourceStage    sourceDuration{(:)}
+    %           4                                5                                6                        7
+    
     visualPresent = ~any(isnan(visualHeadingi));
     soundPresent = ~any(isnan(auditorySourcei{1}));
     
@@ -340,71 +439,77 @@ while trialI < trialNum+1
         clear vx vy vz vfx vfy vfz
     end
     
-    % set auditory source
     if soundPresent
-        % Generate one sound buffer:
-        buffers = alGenBuffers(nsources);
-        
-        % Query for errors:
-        alGetString(alGetError)
-        
-        soundFiles = dir(fullfile(pwd,'*.wav'));
-        
-        alListenerfv(AL.VELOCITY, [0, 0,-1]);
-        alListenerfv(AL.POSITION, [0, 0, 0]);
-        alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-        
-        % Create a sound source:
-        sources = alGenSources(nsources);
-        
-        % if only one source, it will have some problem in matlab,
-        if buffers == 0
-            buffers = buffers+1;
+        if true%~bypassSourceGenerate
+            nsources = auditorySourcei{1};
+            
+            muiltyInitialTime = [];
+            sourceD = [];
+            sourceIndex = [];
+            for sourcei = 1:auditorySourcei{5}
+                muiltyInitialTime = cat(2,muiltyInitialTime, linspace(0, auditoryHeadingi(3)-auditorySourcei{7}(sourcei), auditorySourcei{6}(sourcei)));
+                sourceD = cat(2,sourceD,ones(1,auditorySourcei{6}(sourcei)).*auditorySourcei{7}(sourcei));
+                sourceIndex = cat(2,sourceIndex,ones(1,auditorySourcei{6}(sourcei)).*sourcei);
+            end
+            
+            % Generate one sound buffer:
+            buffers = alGenBuffers(nsources);
+            
+            % Create a sound source:
+            sources = alGenSources(nsources);
+            
+            % if only one source, it will have some problem in matlab,
+            if buffers == 0
+                buffers = buffers+1;
+            end
+            if sources==0
+                sources=sources+2;
+            end
+            joker = randi(length(soundFiles));% add a random sound file initial number
+            %sourceFileList = cell(nsources,1);
+            for i = 1:nsources
+                filei = mod(i+joker,length(soundFiles))+1;
+                soundName = fullfile(pwd,soundFiles(filei).name);
+                sourceFileList{i} = soundFiles(filei).name;
+                [fileSample,freq]= psychwavread(soundName);
+                %     if size(fileSample,1)<freq*AUDITORY.sourceDuration
+                %         fileSample = repmat(fileSample,ceil(freq*AUDITORY.sourceDuration/size(fileSample,1)),1);
+                %     end
+                if size(fileSample,2) == 2
+                    fileSample = fileSample(:,1)+fileSample(:,2)/2;
+                end
+                initialAmp = linspace(0,1,freq*AUDITORY.sourceInitial);
+                terminalAmp = linspace(1,0,freq*AUDITORY.sourceTerminal);
+                fileSample(1:length(initialAmp)) = fileSample(1:length(initialAmp)).*initialAmp';
+                fileSample(end-length(terminalAmp)+1:end) = fileSample(end-length(terminalAmp)+1:end).*terminalAmp';
+                myNoise  = [zeros(round(muiltyInitialTime(i)*freq),1);fileSample;zeros(round((auditoryHeadingi(3)-sourceD(i)-muiltyInitialTime(i))*freq),1)];
+                
+                % Convert it...
+                myNoise = int16(myNoise * 32767);
+                
+                alBufferData( buffers(i), AL.FORMAT_MONO16, myNoise, length(myNoise)*2, freq);
+                
+                % Attach our buffer to it: The source will play the buffers sound data.
+                alSourceQueueBuffers(sources(i), 1, buffers(i));
+                
+                alSourcei(sources(i), AL.LOOPING, AL.FALSE);
+                
+                % Set emission volume to 100%, aka a gain of 1.0:
+                %     if nsources == 1
+                %         alSourcef(sources(i), AL.GAIN, 1);
+                %     else
+                %         if i == 1
+                %             alSourcef(sources(i), AL.GAIN, 1);
+                %         elseif i ==2
+                %             alSourcef(sources(i), AL.GAIN, 0.5);
+                %         end
+                %     end
+                alSourcef(sources(i), AL.GAIN, 0.8);
+                alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
+                alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
+            end
         end
-        if sources==0
-            sources=sources+2;
-        end
         
-        joker = randi(length(soundFiles));
-        for i = 1:nsources
-            filei = mod(i+joker,length(soundFiles))+1;
-            soundName = fullfile(pwd,soundFiles(filei).name);
-            sourceFileList{i,trialI} = soundFiles(filei).name;
-            [fileSample,freq]= psychwavread(soundName);
-            
-            initialAmp = linspace(0,1,freq*AUDITORY.sourceInitial);
-            terminalAmp = linspace(1,0,freq*AUDITORY.sourceTerminal);
-            fileSample(1:length(initialAmp),:) = fileSample(1:length(initialAmp),:).*initialAmp';
-            fileSample(end-length(terminalAmp)+1:end,:) = fileSample(end-length(terminalAmp)+1:end,:).*terminalAmp';
-            myNoise  = [zeros(round(muiltyInitialTime(i)*freq),1);fileSample;zeros(round((max(cell2mat(AUDITORY.headingTime))-AUDITORY.sourceDuration-muiltyInitialTime(i))*freq),1)];
-            
-            % Convert it...
-            myNoise = int16(myNoise * 32767);
-            
-            alBufferData( buffers(i), AL.FORMAT_MONO16, myNoise, length(myNoise)*2, freq);
-            
-            % Attach our buffer to it: The source will play the buffers sound data.
-            alSourceQueueBuffers(sources(i), 1, buffers(i));
-            
-            % Switch source to looping playback: It will repeat playing the buffer until its stopped.
-            alSourcei(sources(i), AL.LOOPING, AL.FALSE);
-            
-            % Set emission volume to 100%, aka a gain of 1.0:
-            %     if nsources == 1
-            %         alSourcef(sources(i), AL.GAIN, 1);
-            %     else
-            %         if i == 1
-            %             alSourcef(sources(i), AL.GAIN, 1);
-            %         elseif i ==2
-            %             alSourcef(sources(i), AL.GAIN, 0.5);
-            %         end
-            %     end
-            alSourcef(sources(i), AL.GAIN, 0.1);
-            alSourcef(sources(i), AL.CONE_INNER_ANGLE, 360);
-            alSourcef(sources(i), AL.CONE_OUTER_ANGLE, 360);
-        end
-    end
-    if soundPresent
         [ax,ay,az,~,~,~] = calMove(auditoryHeadingi,SCREEN.refreshRate);
         audioCoherenceNum = round(auditorySourcei{1}*(1-AUDITORY.coherence));
         audioCoherenceIndex = randperm(auditorySourcei{1},audioCoherenceNum);
@@ -419,15 +524,18 @@ while trialI < trialNum+1
         clear ax ay az
     end
     
+    % set auditory source, calculate for source locations
     if soundPresent
         sourcePosition = cell(auditorySourcei{1},1);
         for i = 1:auditorySourcei{1}
-            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
+            alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{4}(sourceIndex(i))), 0, -cosd(auditorySourcei{4}(sourceIndex(i))));
             
-            zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
-            xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
+            zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(sourceIndex(i),:))*100)))/100;
+            
+            % x position = randi([-x x]+initial draft)
+            xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(sourceIndex(i),:))+auditoryHeadingi(2)./auditoryHeadingi(3)*muiltyInitialTime(i)*sind(auditoryHeadingi(1)))*100)))/100;
             sourcePosition{i} = [xPos, 0, zPos];
-            sourceLocation{trialI,i} = cat(1,sourceLocation{trialI,i},[sourcePosition{i}, 0]);
+            sourceLocation{trialI,i} = [sourcePosition{i}, 0];
             alSource3f(sources(i), AL.POSITION, xPos, 0, zPos);
             
             % Sources themselves remain static in space:
@@ -439,7 +547,6 @@ while trialI < trialNum+1
             end
         end
     end
-    
     
     % delete the frameNum from last trial
     clear frameNum
@@ -456,12 +563,12 @@ while trialI < trialNum+1
         else
             frameNum = length(ax)-1;
         end
-        sourceMovingInitialF = nan(size(muiltyInitialTime));
-        sourceMovingTerminalF = nan(size(muiltyInitialTime));
-        sourceMovingInitialF(audioCoherenceIndex) = round(muiltyInitialTime(audioCoherenceIndex).*SCREEN.refreshRate);
-        sourceMovingTerminalF(audioCoherenceIndex) = sourceMovingInitialF(audioCoherenceIndex)+round(AUDITORY.sourceDuration*SCREEN.refreshRate);
-        sourceMovingIndex = nan(size(muiltyInitialTime));
-        sourceMovingIndex(sourceMovingInitialF==0)=1;
+%         sourceMovingInitialF = nan(size(muiltyInitialTime));
+%         sourceMovingTerminalF = nan(size(muiltyInitialTime));
+%         sourceMovingInitialF(audioCoherenceIndex) = round(muiltyInitialTime(audioCoherenceIndex).*SCREEN.refreshRate);
+%         sourceMovingTerminalF(audioCoherenceIndex) = sourceMovingInitialF(audioCoherenceIndex)+round(AUDITORY.sourceDuration*SCREEN.refreshRate);
+%         sourceMovingIndex = nan(size(muiltyInitialTime));
+%         sourceMovingIndex(sourceMovingInitialF==0)=1;
     end
     
     va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
@@ -476,7 +583,7 @@ while trialI < trialNum+1
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
     
-    startChoice = tic;
+    startChoice=tic;
     % start giving frames
     for framei = 1:frameNum
         if visualPresent
@@ -485,53 +592,37 @@ while trialI < trialNum+1
                 GenerateStarField();
             end
         end
-        if soundPresent
-            if mod(framei,auditoryLifetimeF)==0 && framei~=frameNum
-                for i = 1:auditorySourcei{1}
-                    alSource3f(sources(i), AL.DIRECTION, sind(auditorySourcei{end}(i)), 0, -cosd(auditorySourcei{end}(i)));
-                    
-                    zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(i,:))*100)))/100;
-                    xPos = randi(sort(round((ax(framei)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(i,:)))*100)))/100;
-                    sourcePosition{i} = [xPos, 0 ,zPos];
-                    sourceLocation{trialI,i} = cat(1,sourceLocation{trialI,i},[sourcePosition{i}, framei]);
-                    alSource3f(sources(i), AL.POSITION, xPos, 0, zPos);
-                    
-                    % Sources themselves remain static in space:
-                    alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
-                    
-                    if IsOSX
-                        % Source emits some sound that gets reverbrated in room:
-                        alcASASetSource(ALC.ASA_REVERB_SEND_LEVEL, sources(i), 0.0);
-                    end
-                end
-            end
-            if ismember(framei,sourceMovingInitialF)
-                iList = find(sourceMovingInitialF == framei);
-                sourceMovingIndex(iList) = 1;
-            end
-            if ismember(framei,sourceMovingTerminalF)
-                tList = find(sourceMovingTerminalF == framei);
-                sourceMovingIndex(tList) = 0;
-            end
-            for i = 1:auditorySourcei{1}
-                if sourceMovingIndex(i) == 1
-                    sourcePosition{i} = sourcePosition{i}+sourceV./SCREEN.refreshRate;
-                    sourceLocation{trialI,i} = cat(1,sourceLocation{trialI,i},[sourcePosition{i}, framei]);
-                    alSource3f(sources(i), AL.POSITION, sourcePosition{i}(1), sourcePosition{i}(2), sourcePosition{i}(3));
-                    
-                    % Sources themselves remain static in space:
-                    alSource3f(sources(i), AL.VELOCITY, sourceV(1), sourceV(2), sourceV(3));
-                elseif sourceMovingTerminalF(i) == framei
-                    alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
-                end
-            end
-        end
+%         if soundPresent
+%             if ismember(framei,sourceMovingInitialF)
+%                 iList = find(sourceMovingInitialF == framei);
+%                 sourceMovingIndex(iList) = 1;
+%             end
+%             if ismember(framei,sourceMovingTerminalF)
+%                 tList = find(sourceMovingTerminalF == framei);
+%                 sourceMovingIndex(tList) = 0;
+%             end
+%             for i = 1:auditorySourcei{1}
+%                 if sourceMovingIndex(i) == 1
+%                     sourcePosition{i} = sourcePosition{i}+sourceV./SCREEN.refreshRate;
+%                     sourceLocation{trialI,i} = cat(1,sourceLocation{trialI,i},[sourcePosition{i}, framei]);
+%                     alSource3f(sources(i), AL.POSITION, sourcePosition{i}(1), sourcePosition{i}(2), sourcePosition{i}(3));
+%                     
+%                     % Sources themselves remain static in space:
+%                     alSource3f(sources(i), AL.VELOCITY, sourceV(1), sourceV(2), sourceV(3));
+%                 elseif sourceMovingTerminalF(i) == framei
+%                     alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
+%                 end
+%             end
+%         end
+     
         [~,~,keyCode] = KbCheck;
         if keyCode(escape)
             break
         elseif keyCode(skipKey)
             break
         end
+
+    
         
         if soundPresent
             % for auditory cue
@@ -596,7 +687,7 @@ while trialI < trialNum+1
             Screen('Flip', win);
         end
         
-        % RT mode, 
+        % RT mode,
         [ ~, ~, keyCode ] = KbCheck;
         if keyCode(leftKey)
             choice(trialI,:) = [1,trialI];
@@ -637,30 +728,30 @@ while trialI < trialNum+1
             correctAnswer = randi(2);
         end
     end
-    
-    %     startChoice = tic;
-    if ~choice(trialI,1)
-        [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
-        Screen('TextBackgroundColor',win, [0 0 0 0]);
-        Screen('DrawingFinished',win);
-        Screen('Flip',win,0,0);
-        
-        timei = [conditioni{3}, conditioni{6}];
-        timei = max(timei(~isnan(timei)));
-        while toc(startChoice) <= TRIALINFO.choicePeriod+timei
-            [ ~, ~, keyCode ] = KbCheck;
-            if keyCode(leftKey)
-                choice(trialI,:) = [1,trialI];
-                choiceTime(trialI,:) = [toc(startChoice),trialI];
-            elseif keyCode(rightKey)
-                choice(trialI,:) = [2,trialI];
-                choiceTime(trialI,:) = [toc(startChoice),trialI];
-            end
-            if choice(trialI,1)
-                break
-            end
-        end
-    end
+    %startChoice = tic;
+   if ~choice(trialI,1) %RT mode
+    [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
+    Screen('TextBackgroundColor',win, [0 0 0 0]);
+    Screen('DrawingFinished',win);
+    Screen('Flip',win,0,0);
+    %--------RT mode------
+    timei=[conditioni{3}, conditioni{6}];
+    timei = max(timei(~isnan(timei)));
+    %--------RT mode------
+      while toc(startChoice) <= TRIALINFO.choicePeriod+timei
+         [ ~, ~, keyCode ] = KbCheck;
+         if keyCode(leftKey)
+             choice(trialI,:) = [1,trialI];
+             choiceTime(trialI,:) = [toc(startChoice),trialI];
+         elseif keyCode(rightKey)
+             choice(trialI,:) = [2,trialI];
+             choiceTime(trialI,:) = [toc(startChoice),trialI];
+         end
+         if choice(trialI,1)
+             break
+         end
+      end
+   end
     if feedback
         if choice(trialI,1) == correctAnswer
             % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
@@ -716,8 +807,8 @@ while trialI < trialNum+1
             Eyelink('message', ['Trial repeat ' num2str(trialI)]);
         end
     end
-    tti = tic;
-    if soundPresent
+        tti = tic;
+        if soundPresent
         if true%~bypassSourceGenerate
             % Delete buffer:
             try
@@ -734,7 +825,7 @@ while trialI < trialNum+1
             catch
             end
         end
-    end
+        end
     pause(TRIALINFO.intertrialInterval-toc(tti));
     %pause(TRIALINFO.intertrialInterval);
 end
@@ -765,12 +856,13 @@ if eyelinkMode
     % shut down the eyelink
     Eyelink('ShutDown');
 end
-
-for i=1:nsources
+if soundPresent
+    for i=1:nsources
     % Unqueue sound buffer:
-    try
-        alSourceUnqueueBuffers(sources(i), 1, buffers(i));
-    catch
+        try
+           alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+        catch
+        end
     end
 end
 
@@ -799,6 +891,9 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList')
+if soundPresent
+    save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList');
+else save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','sourceFileList');
+end
 Screen('CloseAll');
 cd(curdir);
