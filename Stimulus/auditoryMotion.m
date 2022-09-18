@@ -119,12 +119,12 @@ if AUDITORY.sourceInitial+AUDITORY.sourceTerminal>AUDITORY.sourceDuration
     error('Invalid number for sourceInitial, sourceTerminal or sourceDuration.')
 end
 
-% do not modifi follows unless you know what it is
+% do not modify follows unless you know what it is
 if ~isequal(ismember([0 1], TRIALINFO.stimulusType), [1 1])
     TRIALINFO.unisensoryRatio = [1,1];
 end
-if any(mod(TRIALINFO.unisensoryRatio,1)~=0) || length(TRIALINFO.unisensoryRatio)~=2
-    error('Invalid input for TRIALINFO.unisensoryRatio, it must be non-zero natural numbers and two-digit matrix.')
+if any(mod(TRIALINFO.unisensoryRatio,1)~=0) || length(TRIALINFO.unisensoryRatio)~=2 || any(TRIALINFO.unisensoryRatio<=0)
+    error('Invalid input for TRIALINFO.unisensoryRatio, it must be two-digit matrix and include non-zero natural numbers.')
 end
 
 % random seed
