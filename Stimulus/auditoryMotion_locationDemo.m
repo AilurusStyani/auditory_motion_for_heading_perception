@@ -54,7 +54,7 @@ coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      =10;
  TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
 %TRIALINFO.headingDegree   = {-90,-45,0,45,90};
-TRIALINFO.headingDistance = {0.3*coordinateMuilty};
+TRIALINFO.headingDistance = {0.1*coordinateMuilty};
 TRIALINFO.headingTime      = {1}; % second
 TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
@@ -153,11 +153,11 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
 %  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
 
  a1 = -10; a2=-15.1 ;a3=10;a4=15.1 ; a5=15; a6=20; a7=-16; a8=-12; a9=5; a10=10;a11=-20;a12=-30;a13=20;a14=30;a15=-9;a16=7;%a3=10;a4=10.01;a5=30;a6=30.01;a7=5;a8=5.01;%a9=25;a10=25.01;
- AUDITORY.synSourceNum = {5};
- AUDITORY.sourceStage = {[5 5 5 5 5]};
- AUDITORY.sourceHeading = {[180,180,180,180,180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
- AUDITORY.sourceDistance = {[0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty;0.3*coordinateMuilty,0.4*coordinateMuilty]};% m
- AUDITORY.sourceDegree = {[-20,20;-20,20;-20,20;-20,20;-20,20]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
+ AUDITORY.synSourceNum = {1,1};
+ AUDITORY.sourceStage = {[1],[1]};
+ AUDITORY.sourceHeading = {[180],[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
+ AUDITORY.sourceDistance = {[3*coordinateMuilty,10*coordinateMuilty],[3*coordinateMuilty,10*coordinateMuilty]};% m
+ AUDITORY.sourceDegree = {[-75,-45];[45,75]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
  
 % parameter for coherence
@@ -506,10 +506,14 @@ while trialI < trialNum+1
             zPos = randi(sort(round((-auditoryHeadingi(2)*cosd(auditoryHeadingi(1))-auditorySourcei{3}{1}(sourceIndex(i),:))*100)))/100;
             
             % x position = randi([-x x]+initial draft)
-            xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(sourceIndex(i),:))+auditoryHeadingi(2)./auditoryHeadingi(3)*muiltyInitialTime(i)*sind(auditoryHeadingi(1)))*100)))/100;
+%             xPos = randi(sort(round((ax(1)+auditoryHeadingi(2)*sind(auditorySourcei{2}{1}(sourceIndex(i),:))+auditoryHeadingi(2)./auditoryHeadingi(3)*muiltyInitialTime(i)*sind(auditoryHeadingi(1)))*100)))/100;
+            xPos = randi(sort(round((ax(1)+zPos*sind(auditorySourcei{2}{1}(sourceIndex(i),:))+zPos*sind(auditoryHeadingi(1)))*100)))/100;
             sourcePosition{i} = [xPos, 0, zPos];
             sourceLocation{trialI,i} = [sourcePosition{i}, 0];
             alSource3f(sources(i), AL.POSITION, xPos, 0, zPos);
+            
+            % display source location
+            disp([xPos, 0, zPos]);
             
             % Sources themselves remain static in space:
             alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
@@ -673,9 +677,21 @@ while trialI < trialNum+1
     end
     
     %% start choice
+%     if soundPresent
+%         correctAnswer = (auditoryHeadingi(1) >0)+1;
+%         if auditoryHeadingi(1) == 0
+%             correctAnswer = randi(2)-1;
+%         end
+%     else
+%         correctAnswer = (visualHeadingi(1) >0)+1;
+%         if visualHeadingi(1) == 0
+%             correctAnswer = randi(2);
+%         end
+%     end
+    
     if soundPresent
-        correctAnswer = (auditoryHeadingi(1) >0)+1;
-        if auditoryHeadingi(1) == 0
+        correctAnswer = (xPos >0)+1;
+        if xPos == 0
             correctAnswer = randi(2)-1;
         end
     else
@@ -684,6 +700,7 @@ while trialI < trialNum+1
             correctAnswer = randi(2);
         end
     end
+    
     startChoice = tic;
     [~, ~, ~] = DrawFormattedText(win, 'What''s your heading direction?','center',SCREEN.center(2)/2,[200 200 200]);
     Screen('TextBackgroundColor',win, [0 0 0 0]);
