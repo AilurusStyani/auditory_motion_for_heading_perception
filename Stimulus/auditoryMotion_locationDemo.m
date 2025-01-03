@@ -48,6 +48,7 @@ pageDown = KbName('pagedown'); % decrease binocular deviation
 eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
+attentionMode = true; % 1/true with attention task
 
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
@@ -56,7 +57,7 @@ TRIALINFO.repetition      =10;
 %TRIALINFO.headingDegree   = {-90,-45,0,45,90};
 TRIALINFO.headingDistance = {0.1*coordinateMuilty};
 TRIALINFO.headingTime      = {1}; % second
-TRIALINFO.stimulusType     = [1]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
@@ -66,6 +67,13 @@ TRIALINFO.fixationSizeD      = 0.25; % degree
 % 1 for intergration, both visual and auditory use the parameters in TRIALINFO,
 % 0 for segregation, visual cue will use VISUAL, and auditory will use AUDITORY.
 TRIALINFO.intergration = [1];
+
+% for attention task
+TRIALINFO.attentionFactor = 1;  % 1 to add the attention task simultaneously
+TRIALINFO.attentionLifeTime = 12; % each number display how many frames, 6 frames in 60Hz Screen  is 100ms
+TRIALINFO.attentionNumSize = 50; % the size of the number
+TRIALINFO.attentionNumLocation = [0,-0.1]; % location of the number to the fixation point
+TRIALINFO.attentionChoicePeriod = 5; % max duration to report for attention task
 
 % for SCREEN
 SCREEN.distance = 0.75*coordinateMuilty;% m
@@ -84,9 +92,9 @@ VISUAL.fixationSizeD  = 0.5;  % degree
 VISUAL.fixationWindow = 2; % degree
 
 VISUAL.density   = 300;    % num/m^3
-VISUAL.coherence = 0.5; % in percent
+VISUAL.coherence = 0.8; % in percent
 VISUAL.probability = VISUAL.coherence;
-VISUAL.lifeTime  = 3; % frame number
+VISUAL.lifeTime  = 20; % frame number
 
 VISUAL.starSize = 0.1;    % degree
 
@@ -234,7 +242,8 @@ AssertOpenGL;
 InitializeMatlabOpenGL;
 
 if max(Screen('Screens')) > 1
-    SCREEN.screenId = max(Screen('Screens'))-1;
+%     SCREEN.screenId = max(Screen('Screens'))-1;
+    SCREEN.screenId = max(Screen('Screens'));
 else
     SCREEN.screenId = max(Screen('Screens'));
 end
@@ -369,6 +378,11 @@ choiceTime = nan(trialNum,2);
 conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
 sourceLocation= cell(trialNum,max(cell2mat(AUDITORY.sourceNum)));
 
+attentionReport = nan(trialNum,2);
+attentionAllSequence = cell(trialNum,1);
+attentionRepAns = nan(trialNum,2);
+attentionRepTime = nan(trialNum,2);
+
 trialI = 1;
 while trialI < trialNum+1
     [~, ~, keyCode]=KbCheck;
@@ -404,6 +418,28 @@ while trialI < trialNum+1
     
     visualPresent = ~any(isnan(visualHeadingi));
     soundPresent = ~any(isnan(auditorySourcei{1}));
+    
+    % calculate for attention task
+    if attentionMode
+        sequanceNum = floor(max(visualHeadingi(3),auditoryHeadingi(3)) / (TRIALINFO.attentionLifeTime*1/SCREEN.refreshRate));
+        attentionSequence = generateNonConsecutiveSequence(sequanceNum, 0, 9);
+        attentionSource = randi(10)-1;
+        attentionAns = sum(attentionSequence == attentionSource);
+        
+        attentionAllSequence(trialI) = attentionSequence;
+        attentionRepAns(trialI,1) = attentionAns;
+        attentionRepAns(trialI,2) = trialI;
+    end
+    
+    if attentionMode
+        attentionSeqOrder = 1;
+        [~, ~, ~] = DrawFormattedText(win, 'Count the frequency of the following number','center',TRIALINFO.fixationPosition(2)+TRIALINFO.attentionNumLocation(2)*SCREEN.heightPix,[200 200 200]);
+        oldTextSize = Screen('TextSize', win, TRIALINFO.attentionNumSize);
+        [~, ~, ~] = DrawFormattedText(win, num2str(attentionSource),'center',TRIALINFO.fixationPosition(2),[200 200 200]);
+        Screen('TextSize', win, oldTextSize);
+        Screen('Flip', win);
+        WaitSecs(2);
+    end
     
     if visualPresent
         [vx,vy,vz,vfx,vfy,vfz] = calMove(visualHeadingi,SCREEN.refreshRate);
@@ -560,6 +596,7 @@ while trialI < trialNum+1
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
     
+            
     % start giving frames
     for framei = 1:frameNum
         if visualPresent
@@ -608,6 +645,14 @@ while trialI < trialNum+1
             end
         end
         
+        % for attention task, which number to display
+        if mod(framei,TRIALINFO.attentionLifeTime)==0
+            attentionSeqOrder = attentionSeqOrder+1;
+            if attentionSeqOrder >sequanceNum
+                attentionSeqOrder = sequanceNum;
+            end
+        end
+        
         if visualPresent
             % for visual cue
             if keyCode(pageUp)
@@ -653,10 +698,20 @@ while trialI < trialNum+1
             % draw the fixation point and 3d dots for right eye
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
-            drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
-            Screen('Flip', win);
+            if attentionMode
+                drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+                oldTextSize = Screen('TextSize', win, TRIALINFO.attentionNumSize);
+                [~, ~, ~] = DrawFormattedText(win, num2str(attentionSequence(attentionSeqOrder)),'center',TRIALINFO.fixationPosition(2)+TRIALINFO.attentionNumLocation(2)*SCREEN.heightPix,[200 200 200]);
+                Screen('TextSize', win, oldTextSize);
+            end
+             Screen('Flip', win);
         else
             drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            if attentionMode
+                oldTextSize = Screen('TextSize', win, TRIALINFO.attentionNumSize);
+                [~, ~, ~] = DrawFormattedText(win, num2str(attentionSequence(attentionSeqOrder)),'center',TRIALINFO.fixationPosition(2)+TRIALINFO.attentionNumLocation(2)*SCREEN.heightPix,[200 200 200]);
+                Screen('TextSize', win, oldTextSize);
+            end
             Screen('Flip', win);
         end
         
@@ -756,6 +811,55 @@ while trialI < trialNum+1
             end
         end
     end
+    
+    if attentionMode
+        [~, ~, ~] = DrawFormattedText(win,['I saw the number ' num2str(attentionSource) ' appear __ times.'],'center',TRIALINFO.fixationPosition(2),[200 200 200]);
+        Screen('Flip', win);
+        attentionReportSt = tic;
+        numberReported = 0;
+        while toc(attentionReportSt) < TRIALINFO.attentionChoicePeriod
+            [keyIsDown, ~,keyCode] = KbCheck;
+            if keyIsDown
+                attentionRepTime(trialI,1) = toc(attentionReportSt);
+                attentionRepTime(trialI,2) = trialI;
+                numberReported = 1;
+                break;
+            end
+            WaitSecs(0.1);
+        end
+        
+        if keyIsDown
+            tempNum = KbName(find(keyCode, 1));
+            reportNum = str2double(tempNum(1));
+            attentionReport(trialI,1) = reportNum;
+            attentionReport(trialI,2) = trialI;
+        end
+        
+        if numberReported
+            if isequal(reportNum,attentionAns)
+                % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
+                [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
+                if eyelinkMode
+                    Eyelink('message', ['Number reported ' num2str(trialI)]);
+                end
+            else
+                % sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
+                [~, ~, ~] = DrawFormattedText(win, 'Please try again.','center',SCREEN.center(2)/2,[200 20 20]);
+                if eyelinkMode
+                    Eyelink('message', ['Number reported ' num2str(trialI)]);
+                end
+            end
+        else
+            sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
+            [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
+            if eyelinkMode
+                Eyelink('message', ['Missing number report' num2str(trialI)]);
+            end
+        end
+        Screen('Flip',win,0,0);
+        pause(feedbackDuration);
+    end
+    
     if choice(trialI,1)
         conditionIndex(trialI,:) = [conditioni,trialI];
         if eyelinkMode
@@ -837,6 +941,6 @@ pause(0.1);
 CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList')
+save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList','attentionReport','attentionAllSequence','attentionRepAns','attentionRepTime')
 Screen('CloseAll');
 cd(curdir);
