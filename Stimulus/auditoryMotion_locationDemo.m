@@ -46,18 +46,18 @@ pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
 eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
-feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 attentionMode = true; % 1/true with attention task
 
 %% parameters
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      =10;
- TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
+TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
 %TRIALINFO.headingDegree   = {-90,-45,0,45,90};
 TRIALINFO.headingDistance = {0.1*coordinateMuilty};
 TRIALINFO.headingTime      = {1}; % second
-TRIALINFO.stimulusType     = [0 1 2]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.stimulusType     = [0]; % 0 for visual only, 1 for auditory only, 2 for both provided
+TRIALINFO.headingFeedback  = testMode;
 
 TRIALINFO.choicePeriod        = 2; % second
 TRIALINFO.intertrialInterval = 1; % second
@@ -74,6 +74,7 @@ TRIALINFO.attentionLifeTime = 12; % each number display how many frames, 6 frame
 TRIALINFO.attentionNumSize = 50; % the size of the number
 TRIALINFO.attentionNumLocation = [0,-0.1]; % location of the number to the fixation point
 TRIALINFO.attentionChoicePeriod = 5; % max duration to report for attention task
+TRIALINFO.attentionFeedback = testMode;
 
 % for SCREEN
 SCREEN.distance = 0.75*coordinateMuilty;% m
@@ -94,7 +95,7 @@ VISUAL.fixationWindow = 2; % degree
 VISUAL.density   = 300;    % num/m^3
 VISUAL.coherence = 0.8; % in percent
 VISUAL.probability = VISUAL.coherence;
-VISUAL.lifeTime  = 20; % frame number
+VISUAL.lifeTime  = 40; % frame number
 
 VISUAL.starSize = 0.1;    % degree
 
@@ -233,9 +234,9 @@ end
 
 %% initial opengl
 if testMode
-    Screen('Preference', 'SkipSyncTests', 1); % for test
+    Screen('Preference', 'SkipSyncTests', 2); % for test
 else
-    Screen('Preference', 'SkipSyncTests', 0); % for recording
+    Screen('Preference', 'SkipSyncTests', 2); % for recording
 end
 
 AssertOpenGL;
@@ -377,6 +378,8 @@ choice = zeros(trialNum,2);
 choiceTime = nan(trialNum,2);
 conditionIndex = cell(trialNum,size(TRIALINFO.trialConditions,2)+1);
 sourceLocation= cell(trialNum,max(cell2mat(AUDITORY.sourceNum)));
+muiltyInitialTime = [];
+sourceFileList = [];
 
 attentionReport = nan(trialNum,2);
 attentionAllSequence = cell(trialNum,1);
@@ -392,12 +395,12 @@ while trialI < trialNum+1
     
     % TRIALINFO.trialConditions =
     % {visualDegree visualDistance visualTime, ...
-    %       1                        2                       3
+    %       1             2            3
     %
     % auditoryDegree    auditoryDistance     auditoryTime      sourceNum   sourceDegree(:)
-    %       4                                 5                                  6                          7                       8
-    % sourceDistance{(:)}  sourceHeading{(:)}   synSourceNum sourceStage   sourceDuration{(:)}
-    %       9                                10                                11                          12                      13
+    %       4                 5                    6             7                8
+    % sourceDistance{(:)}  sourceHeading{(:)}   synSourceNum     sourceStage   sourceDuration{(:)}
+    %       9                    10                   11             12                13
     
     conditioni = TRIALINFO.trialConditions(trialIndex(trialOrder(trialI)),:);
     visualHeadingi = cell2mat(conditioni(1:3));
@@ -426,7 +429,7 @@ while trialI < trialNum+1
         attentionSource = randi(10)-1;
         attentionAns = sum(attentionSequence == attentionSource);
         
-        attentionAllSequence(trialI) = attentionSequence;
+        attentionAllSequence{trialI} = attentionSequence;
         attentionRepAns(trialI,1) = attentionAns;
         attentionRepAns(trialI,2) = trialI;
     end
@@ -582,15 +585,15 @@ while trialI < trialNum+1
 %         sourceMovingTerminalF(audioCoherenceIndex) = sourceMovingInitialF(audioCoherenceIndex)+round(AUDITORY.sourceDuration*SCREEN.refreshRate);
 %         sourceMovingIndex = nan(size(muiltyInitialTime));
 %         sourceMovingIndex(sourceMovingInitialF==0)=1;
-    end
     
-    va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
-        0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
+%     va = [sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
+%         0,cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
+    va = [cosd(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3),...
+        0,sind(auditoryHeadingi(1))*auditoryHeadingi(2)/auditoryHeadingi(3)];
     alListenerfv(AL.VELOCITY, va);
     alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
     alListenerfv(AL.POSITION, [0 0 0]);
-    if soundPresent
-        alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
+    alSourcePlayv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
     end
     
     frameTime = nan(1,frameNum);
@@ -646,10 +649,12 @@ while trialI < trialNum+1
         end
         
         % for attention task, which number to display
-        if mod(framei,TRIALINFO.attentionLifeTime)==0
-            attentionSeqOrder = attentionSeqOrder+1;
-            if attentionSeqOrder >sequanceNum
-                attentionSeqOrder = sequanceNum;
+        if attentionMode
+            if mod(framei,TRIALINFO.attentionLifeTime)==0
+                attentionSeqOrder = attentionSeqOrder+1;
+                if attentionSeqOrder >sequanceNum
+                    attentionSeqOrder = sequanceNum;
+                end
             end
         end
         
@@ -761,20 +766,31 @@ while trialI < trialNum+1
     Screen('TextBackgroundColor',win, [0 0 0 0]);
     Screen('DrawingFinished',win);
     Screen('Flip',win,0,0);
+    chosenFlag = false;
     while toc(startChoice) <= TRIALINFO.choicePeriod
-        [ ~, ~, keyCode ] = KbCheck;
-        if keyCode(leftKey)
-            choice(trialI,:) = [1,trialI];
-            choiceTime(trialI,:) = [toc(startChoice),trialI];
-        elseif keyCode(rightKey)
-            choice(trialI,:) = [2,trialI];
-            choiceTime(trialI,:) = [toc(startChoice),trialI];
-        end
-        if choice(trialI,1)
-            break
+        [ keyIsDown, ~, keyCode ] = KbCheck;
+        if keyIsDown
+            if keyCode(leftKey)
+                choice(trialI,:) = [1,trialI];
+                choiceTime(trialI,:) = [toc(startChoice),trialI];
+                chosenFlag = true;
+            elseif keyCode(rightKey)
+                choice(trialI,:) = [2,trialI];
+                choiceTime(trialI,:) = [toc(startChoice),trialI];
+                chosenFlag = true;
+            end
+            
+            while keyIsDown
+                pause(0.1);
+                [ keyIsDown, ~, ~ ] = KbCheck;
+            end
+            
+            if chosenFlag
+                break
+            end
         end
     end
-    if feedback
+    if TRIALINFO.headingFeedback
         if choice(trialI,1) == correctAnswer
             % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
             [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
@@ -798,34 +814,48 @@ while trialI < trialNum+1
         Screen('DrawingFinished',win);
         Screen('Flip',win,0,0);
         pause(feedbackDuration);
+    elseif chosenFlag
+        sound(0.2*sin(2*pi*25*(1:3000)/200)); % response cue
+        if eyelinkMode
+            Eyelink('message', ['Decision made ' num2str(trialI)]);
+        end
     else
-        if choice(trialI,1)
-            sound(0.2*sin(2*pi*25*(1:3000)/200)); % response cue
-            if eyelinkMode
-                Eyelink('message', ['Decision made ' num2str(trialI)]);
-            end
-        else
-            sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
-            if eyelinkMode
-                Eyelink('message', ['Missing ' num2str(trialI)]);
-            end
+        sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
+        if eyelinkMode
+            Eyelink('message', ['Missing ' num2str(trialI)]);
         end
     end
     
     if attentionMode
-        [~, ~, ~] = DrawFormattedText(win,['I saw the number ' num2str(attentionSource) ' appear __ times.'],'center',TRIALINFO.fixationPosition(2),[200 200 200]);
+        [~, ~, ~] = DrawFormattedText(win,['I saw the number ' num2str(attentionSource) ' appearing __ times.'],'center',TRIALINFO.fixationPosition(2),[200 200 200]);
         Screen('Flip', win);
         attentionReportSt = tic;
         numberReported = 0;
+        attChosenFlag = false;
         while toc(attentionReportSt) < TRIALINFO.attentionChoicePeriod
             [keyIsDown, ~,keyCode] = KbCheck;
             if keyIsDown
-                attentionRepTime(trialI,1) = toc(attentionReportSt);
-                attentionRepTime(trialI,2) = trialI;
-                numberReported = 1;
-                break;
+                tempNum = KbName(find(keyCode, 1));
+                reportNum = str2double(tempNum(1));
+                
+                if ~isnan(reportNum) && isnumeric(reportNum)
+                    attentionReport(trialI,1) = reportNum;
+                    attentionReport(trialI,2) = trialI;
+                    
+                    attentionRepTime(trialI,1) = toc(attentionReportSt);
+                    attentionRepTime(trialI,2) = trialI;
+                    numberReported = 1;
+                    attChosenFlag = true;
+                end
             end
-            WaitSecs(0.1);
+            while keyIsDown
+                pause(0.1);
+                [ keyIsDown, ~, ~ ] = KbCheck;
+            end
+            
+            if attChosenFlag
+                break
+            end
         end
         
         if keyIsDown
@@ -835,7 +865,7 @@ while trialI < trialNum+1
             attentionReport(trialI,2) = trialI;
         end
         
-        if numberReported
+        if TRIALINFO.attentionFeedback
             if isequal(reportNum,attentionAns)
                 % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
                 [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
@@ -849,15 +879,18 @@ while trialI < trialNum+1
                     Eyelink('message', ['Number reported ' num2str(trialI)]);
                 end
             end
-        else
+            Screen('Flip',win,0,0);
+            pause(feedbackDuration);
+        elseif ~attChosenFlag % no choice
             sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
             [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
             if eyelinkMode
                 Eyelink('message', ['Missing number report' num2str(trialI)]);
             end
+            Screen('Flip',win,0,0);
+        else
+            Screen('Flip',win,0,0);
         end
-        Screen('Flip',win,0,0);
-        pause(feedbackDuration);
     end
     
     if choice(trialI,1)
@@ -908,39 +941,45 @@ if eyelinkMode
     Eyelink('ShutDown');
 end
 
-for i=1:nsources
-    % Unqueue sound buffer:
+if soundPresent
+    for i=1:nsources
+        % Unqueue sound buffer:
+        try
+            alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+        catch
+        end
+    end
+    
+    % Wait a bit:
+    pause(0.1);
+    
+    % Delete buffer:
     try
-        alSourceUnqueueBuffers(sources(i), 1, buffers(i));
+        alDeleteBuffers(nsources, buffers);
     catch
     end
+    
+    % Wait a bit:
+    pause(0.1);
+    
+    % Delete sources:
+    try
+        alDeleteSources(nsources, sources);
+    catch
+    end
+    
+    % Wait a bit:
+    pause(0.1);
+    
+    % Shutdown OpenAL:
+    CloseOpenAL;
 end
-
-% Wait a bit:
-pause(0.1);
-
-% Delete buffer:
-try
-    alDeleteBuffers(nsources, buffers);
-catch
-end
-
-% Wait a bit:
-pause(0.1);
-
-% Delete sources:
-try
-    alDeleteSources(nsources, sources);
-catch
-end
-
-% Wait a bit:
-pause(0.1);
-
-% Shutdown OpenAL:
-CloseOpenAL;
 
 % save result
-save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList','attentionReport','attentionAllSequence','attentionRepAns','attentionRepTime')
-Screen('CloseAll');
+if attentionMode
+    save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList','attentionReport','attentionAllSequence','attentionRepAns','attentionRepTime')
+else
+    save(fullfile(saveDir,fileName),'choice','choiceTime','conditionIndex','TRIALINFO','SCREEN','AUDITORY','VISUAL','seed','sourceLocation','muiltyInitialTime','sourceFileList')
+end
+    Screen('CloseAll');
 cd(curdir);
