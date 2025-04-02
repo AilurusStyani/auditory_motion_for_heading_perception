@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-dataPath = 'D:\BYC\project\OpenAl\auditory_motion_for_heading_perception\Stimulus\data';
+dataPath = 'D:\project\auditory_motion_for_heading_perception\Stimulus\data';
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
 colorIndex = {[0.9,0.2,0.2],[0.2,0.9,0.2],[0.2,0.2,0.9]};

@@ -5,7 +5,7 @@
 % ToDO:
 % 1. Eyelink
 % 2. Audio-visual both provided segregation condition
-CloseOpenAL;
+% CloseOpenAL;
 clear all STARDATA
 close all
 
@@ -55,7 +55,7 @@ TRIALINFO.repetition      =10;
 TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
 %TRIALINFO.headingDegree   = {-90,-45,0,45,90};
 TRIALINFO.headingDistance = {0.1*coordinateMuilty};
-TRIALINFO.headingTime      = {1}; % second
+TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [0]; % 0 for visual only, 1 for auditory only, 2 for both provided
 TRIALINFO.headingFeedback  = testMode;
 
@@ -73,8 +73,9 @@ TRIALINFO.attentionFactor = 1;  % 1 to add the attention task simultaneously
 TRIALINFO.attentionLifeTime = 12; % each number display how many frames, 6 frames in 60Hz Screen  is 100ms
 TRIALINFO.attentionNumSize = 50; % the size of the number
 TRIALINFO.attentionNumLocation = [0,-0.1]; % location of the number to the fixation point
-TRIALINFO.attentionChoicePeriod = 5; % max duration to report for attention task
+TRIALINFO.attentionChoicePeriod = 2; % max duration to report for attention task
 TRIALINFO.attentionFeedback = testMode;
+TRIALINFO.attentionNumDisplayTime = 2; % second
 
 % for SCREEN
 SCREEN.distance = 0.75*coordinateMuilty;% m
@@ -211,8 +212,13 @@ trialOrder = randperm(trialNum);
 
 disp(['This block has  ' num2str(trialNum) ' trials']);
 
-timePredicted = (TRIALINFO.fixationPeriod + mean(cell2mat(TRIALINFO.headingTime)) + TRIALINFO.choicePeriod + ...
-    TRIALINFO.intertrialInterval ) * trialNum;
+if attentionMode
+    timePredicted = (TRIALINFO.fixationPeriod + TRIALINFO.attentionNumDisplayTime + mean(cell2mat(TRIALINFO.headingTime)) + TRIALINFO.choicePeriod + ...
+        TRIALINFO.attentionChoicePeriod + TRIALINFO.intertrialInterval ) * trialNum;
+else
+    timePredicted = (TRIALINFO.fixationPeriod + mean(cell2mat(TRIALINFO.headingTime)) + TRIALINFO.choicePeriod + ...
+        TRIALINFO.intertrialInterval ) * trialNum;
+end
 fprintf(1,'This block will cost  ');
 fprintf(2,[num2str(timePredicted/60) ' '] );
 fprintf(1,'minutes \n');
@@ -356,20 +362,20 @@ if eyelinkMode
     pause(1); % wait a little bit, in case the key press during calibration influence the following keyboard check
 end
 
-%% initial openal
-% Initialize OpenAL subsystem at debuglevel 2 with the default output device:
-InitializeMatlabOpenAL(2);
-
-% Query for errors:
-alGetString(alGetError)
-
-soundFiles = dir(fullfile(pwd,'*.wav'));
-
-alListenerfv(AL.VELOCITY, [0, 0,-1]);
-alListenerfv(AL.POSITION, [0, 0, 0]);
-alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
-
-% the other part of openal is in trial loop
+% %% initial openal
+% % Initialize OpenAL subsystem at debuglevel 2 with the default output device:
+% InitializeMatlabOpenAL(2);
+% 
+% % Query for errors:
+% alGetString(alGetError)
+% 
+% soundFiles = dir(fullfile(pwd,'*.wav'));
+% 
+% alListenerfv(AL.VELOCITY, [0, 0,-1]);
+% alListenerfv(AL.POSITION, [0, 0, 0]);
+% alListenerfv(AL.ORIENTATION,[0 0 -1 0 1 0]);
+% 
+% % the other part of openal is in trial loop
 
 %% trial start
 HideCursor(SCREEN.screenId);
@@ -441,7 +447,7 @@ while trialI < trialNum+1
         [~, ~, ~] = DrawFormattedText(win, num2str(attentionSource),'center',TRIALINFO.fixationPosition(2),[200 200 200]);
         Screen('TextSize', win, oldTextSize);
         Screen('Flip', win);
-        WaitSecs(2);
+        WaitSecs(TRIALINFO.attentionNumDisplayTime);
     end
     
     if visualPresent

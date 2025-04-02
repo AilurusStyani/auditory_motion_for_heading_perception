@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-dataPath = 'D:\BYC\project\OpenAl\auditory_motion_for_heading_perception\Stimulus\data\bycData';
+dataPath = 'D:\project\auditory_motion_for_heading_perception\Stimulus\data';
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
 colorIndex = {[0.9,0.0,0.2],[0.8,0.1,0.2],[0.7, 0.2, 0.2],[0.6 0.3 0.2];[0.3 0.6 0.2],[0.2 0.7 0.2],[0.1 0.8 0.2],[0.0 0.9 0.2]};
@@ -10,18 +10,20 @@ for fileI = 1:length(files)
     nameIndex = strfind(files(fileI).name,'_');
     subName = files(fileI).name(nameIndex(1)+1:nameIndex(2)-1);
     dateNum = files(fileI).name(nameIndex(2)+1:nameIndex(2)+11);
-        if contains(subName,'test') || isempty(subName)
-            continue
-        end
+    
+    % skip test data
+%     if contains(subName,'test') || isempty(subName)
+%         continue
+%     end
     
     data = load(fullfile(dataPath,files(fileI).name));
     
     % block check
-    if any(isnan(data.choiceTime),true)
-        fprintf(2,[files(fileI).name '\n']);
-        fprintf(2,['This file is skipped cause the experiment was not completed.\n\n']);
-        continue
-    end
+%     if any(isnan(data.choiceTime),'all')
+%         fprintf(2,[files(fileI).name '\n']);
+%         fprintf(2,['This file is skipped cause the experiment was not completed.\n\n']);
+%         continue
+%     end
     
     if size(data.choice,2)==2
         audiIndex = cell2mat(data.conditionIndex(logical(sum(isnan(cell2mat(data.conditionIndex(:,1:3))),2)>0),end));
@@ -136,6 +138,17 @@ for fileI = 1:length(files)
         end
     end
     
+    % attention part
+    AnsStats = tabulate(data.attentionReport(:,1));
+    disp('汇报中的数字 | 出现频次');
+    disp(AnsStats(:,1:2));
+    
+    AnsStats = tabulate(data.attentionRepAns(:,1));
+    disp('答案中的数字 | 出现频次');
+    disp(AnsStats(:,1:2));
+    
+    attCR = data.attentionRepAns(:,1) == data.attentionReport(:,1);
+    disp(['数字选择的正确率是：' num2str(sum(attCR)/length(attCR))]);
     figureNum = figureNum +1;
 end
 
