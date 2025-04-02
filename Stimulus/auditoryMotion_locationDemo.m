@@ -53,7 +53,7 @@ attentionMode = true; % 1/true with attention task
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      =10;
 TRIALINFO.headingDegree   = {-15,-8,-4,-1,1,4,8,15};
-%TRIALINFO.headingDegree   = {-90,-45,0,45,90};
+% TRIALINFO.headingDegree   = {-90,0,90};
 TRIALINFO.headingDistance = {0.1*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [0]; % 0 for visual only, 1 for auditory only, 2 for both provided
@@ -391,6 +391,11 @@ attentionReport = nan(trialNum,2);
 attentionAllSequence = cell(trialNum,1);
 attentionRepAns = nan(trialNum,2);
 attentionRepTime = nan(trialNum,2);
+attentionNumInTrial = cell2mat(TRIALINFO.headingTime)*SCREEN.refreshRate/TRIALINFO.attentionLifeTime;
+attentionMaxTimes = floor(attentionNumInTrial/2);% the max times to display a number
+oriList = 1:attentionMaxTimes;
+nextList = repmat(oriList,1,ceil(trialNum/length(oriList)));
+attentionNumList = nextList(1:trialNum);
 
 trialI = 1;
 while trialI < trialNum+1
@@ -431,8 +436,10 @@ while trialI < trialNum+1
     % calculate for attention task
     if attentionMode
         sequanceNum = floor(max(visualHeadingi(3),auditoryHeadingi(3)) / (TRIALINFO.attentionLifeTime*1/SCREEN.refreshRate));
-        attentionSequence = generateNonConsecutiveSequence(sequanceNum, 0, 9);
         attentionSource = randi(10)-1;
+        timesN = randi(length(attentionNumList));
+        times = attentionNumList(timesN);
+        attentionSequence = generateNonConsecutiveSequence(sequanceNum, 0, 9,attentionSource,times);
         attentionAns = sum(attentionSequence == attentionSource);
         
         attentionAllSequence{trialI} = attentionSequence;
@@ -905,6 +912,9 @@ while trialI < trialNum+1
             Eyelink('message', ['Trial complete ' num2str(trialI)]);
         end
         trialI = trialI +1;
+        if attentionMode
+            attentionNumList(timesN) = [];
+        end
     else
         trialOrder = [trialOrder trialOrder(trialI)];
         trialOrder(trialI) = [];

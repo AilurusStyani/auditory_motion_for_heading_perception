@@ -140,6 +140,7 @@ for fileI = 1:length(files)
     
     % attention part
     AnsStats = tabulate(data.attentionReport(:,1));
+    disp(['被试' subName '在' dateNum '测试中']);
     disp('汇报中的数字 | 出现频次');
     disp(AnsStats(:,1:2));
     
