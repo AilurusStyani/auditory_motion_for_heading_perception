@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-dataPath = 'D:\project\auditory_motion_for_heading_perception\Stimulus\data';
+dataPath = 'E:\Project\auditory_motion_for_heading_perception\Stimulus\data';
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
 colorIndex = {[0.9,0.0,0.2],[0.8,0.1,0.2],[0.7, 0.2, 0.2],[0.6 0.3 0.2];[0.3 0.6 0.2],[0.2 0.7 0.2],[0.1 0.8 0.2],[0.0 0.9 0.2]};
@@ -139,17 +139,21 @@ for fileI = 1:length(files)
     end
     
     % attention part
+    
+    answerTrialNum = sum(~isnan(data.attentionReport(:,1)));
     AnsStats = tabulate(data.attentionReport(:,1));
-    disp(['è¢«è¯•' subName 'åœ¨' dateNum 'æµ‹è¯•ä¸­']);
-    disp('æ±‡æŠ¥ä¸­çš„æ•°å­— | å‡ºç°é¢‘æ¬¡');
+    disp([double('±»ÊÔ') subName double('ÔÚ') dateNum double('²âÊÔÖĞ')]);
+    disp([double('ÔÚ»ã±¨µÄ') num2str(answerTrialNum) double('ÊÔ´ÎÖĞ£¬Êı×Ö | ³öÏÖÆµ´Î')]);
     disp(AnsStats(:,1:2));
     
+    reportedTrialNum = sum(~isnan(data.attentionRepAns(:,1)));
     AnsStats = tabulate(data.attentionRepAns(:,1));
-    disp('ç­”æ¡ˆä¸­çš„æ•°å­— | å‡ºç°é¢‘æ¬¡');
+    disp([double('ÔÚÕ¹Ê¾µÄ') num2str(reportedTrialNum) double('ÊÔ´ÎÖĞ£¬Êı×Ö | ³öÏÖÆµ´Î')]);
     disp(AnsStats(:,1:2));
     
-    attCR = data.attentionRepAns(:,1) == data.attentionReport(:,1);
-    disp(['æ•°å­—é€‰æ‹©çš„æ­£ç¡®ç‡æ˜¯ï¼š' num2str(sum(attCR)/length(attCR))]);
+    attCR = data.attentionRepAns(1:reportedTrialNum,1) == data.attentionReport(1:reportedTrialNum,1);
+    missR = isnan(data.attentionReport(1:reportedTrialNum,1));
+    disp([double('Êı×ÖÑ¡ÔñµÄÕıÈ·ÂÊÊÇ£º')  num2str(sum(attCR)/length(attCR)) double('£¬Â©Ê§ÂÊÊÇ') num2str(sum(missR)/length(missR))]);
     figureNum = figureNum +1;
 end
 
