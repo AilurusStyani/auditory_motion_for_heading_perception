@@ -34,6 +34,7 @@ curdir = pwd;
 
 % set keyboard
 KbName('UnifyKeyNames');
+DisableKeysForKbCheck(133);
 skipKey   = KbName('space');
 escape    = KbName('ESCAPE');
 leftKey   = KbName('LeftArrow');
@@ -54,8 +55,8 @@ attentionMode = true; % 1/true with attention task
 coordinateMuilty = 1; % convert m to coordinate system for moving distance etc.
 TRIALINFO.repetition      =8;
  TRIALINFO.headingDegree   = {-18,18,-12,12,-8,8,-3,3};
-%TRIALINFO.headingDegree   = {-90,0,90};
-TRIALINFO.headingDistance = {1*coordinateMuilty};
+% TRIALINFO.headingDegree   = {-90,0,90};
+TRIALINFO.headingDistance = {2*coordinateMuilty};
 TRIALINFO.headingTime      = {2}; % second
 TRIALINFO.stimulusType     = [2]; % 0 for visual only, 1 for auditory only, 2 for both provided
 TRIALINFO.unisensoryRatio  = [1,2];
@@ -87,7 +88,7 @@ deviationAdjust     = 0.001; % how fast to adjust the deviation by key pressing,
 
 % parameters for visual cue
 VISUAL.headingDegree = TRIALINFO.headingDegree; % cell
-VISUAL.headingDegreeDelta = {0 20 -20 40 -40}; % delta degree for segregation condition
+% VISUAL.headingDegreeDelta = {0 20 -20 40 -40}; % delta degree for segregation condition
 
 VISUAL.headingDistance = TRIALINFO.headingDistance; % cell
 VISUAL.headingTime = TRIALINFO.headingTime; % cell
@@ -113,7 +114,7 @@ AUDITORY.headingTime = TRIALINFO.headingTime; % cell
  AUDITORY.synSourceNum = {1};
  AUDITORY.sourceStage = {[1]};
  AUDITORY.sourceHeading = {[180]}; % degree, 0 for [0 0 -z], 90 for [x 0 0], -90 for [-x 0 0], 180 for [0 0 +z]
- AUDITORY.sourceDistance = {[3*coordinateMuilty,10*coordinateMuilty]};% m
+ AUDITORY.sourceDistance = {[5*coordinateMuilty,10*coordinateMuilty]};% m
  AUDITORY.sourceDegree = {[-75,75]}; % degree for position [-55,-35;35,55] [-30,-10;10,30]
  AUDITORY.sourceNum = cellfun(@sum, AUDITORY.sourceStage, 'UniformOutput',0);
 
@@ -354,6 +355,8 @@ attentionNumList = nextList(1:trialNum);
 
 trialI = 1;
 sourceFileList = cell(cell2mat(AUDITORY.sourceNum),trialNum);
+
+nsources =cell2mat( AUDITORY.sourceNum);
 while trialI < trialNum+1
     [~, ~, keyCode]=KbCheck;
     if keyCode(escape)
@@ -419,7 +422,7 @@ while trialI < trialNum+1
     
     if soundPresent
         
-        nsources = auditorySourcei{1};
+%         nsources = auditorySourcei{1};
         
         muiltyInitialTime = [];
         sourceD = [];
@@ -691,7 +694,7 @@ while trialI < trialNum+1
     if soundPresent
         correctAnswer = (auditoryHeadingi(1) >0)+1;
         if auditoryHeadingi(1) == 0
-            correctAnswer = randi(2)-1;
+            correctAnswer = randi(2);
         end
     else
         correctAnswer = (visualHeadingi(1) >0)+1;
@@ -706,9 +709,8 @@ while trialI < trialNum+1
     Screen('Flip',win,0,0);
     chosenFlag = false;
     while toc(startChoice) <= TRIALINFO.choicePeriod
-        [ ~, ~, keyCode ] = KbCheck;
-        keyCode(133) = 0; % some error with my PC that set F22 as pressed
-        if sum(keyCode)>0
+        [ keyIsDown, ~, keyCode ] = KbCheck;
+        if keyIsDown
             if keyCode(leftKey)
                 choice(trialI,:) = [1,trialI];
                 choiceTime(trialI,:) = [toc(startChoice),trialI];
@@ -719,10 +721,9 @@ while trialI < trialNum+1
                 chosenFlag = true;
             end
             
-            while sum(keyCode)>0
+            while keyIsDown
                 pause(0.1);
-                [ ~, ~, keyCode ] = KbCheck;
-                keyCode(133)=0;
+                [ keyIsDown, ~, ~ ] = KbCheck;
             end
             
             if chosenFlag
@@ -773,9 +774,8 @@ while trialI < trialNum+1
         numberReported = 0;
         attChosenFlag = false;
         while toc(attentionReportSt) < TRIALINFO.attentionChoicePeriod
-            [~, ~,keyCode] = KbCheck;
-            keyCode(133) = 0;
-            if sum(keyCode)>0
+            [keyIsDown, ~,keyCode] = KbCheck;
+            if keyIsDown
                 tempNum = KbName(find(keyCode, 1));
                 reportNum = str2double(tempNum(1));
                 
@@ -789,11 +789,9 @@ while trialI < trialNum+1
                     attChosenFlag = true;
                 end
                 
-                while sum(keyCode)>0
+                while keyIsDown
                     pause(0.1);
-                    [ ~, ~, keyCode ] = KbCheck;
-                    % some error with my PC, F22 is always active
-                    keyCode(133) = 0;
+                    [ keyIsDown, ~, ~ ] = KbCheck;
                 end
             end
             
@@ -802,7 +800,7 @@ while trialI < trialNum+1
             end
         end
         
-        if sum(keyCode)>0
+        if keyIsDown
             tempNum = KbName(find(keyCode, 1));
             reportNum = str2double(tempNum(1));
             attentionReport(trialI,1) = reportNum;
@@ -810,11 +808,17 @@ while trialI < trialNum+1
         end
         
         if TRIALINFO.attentionFeedback
-            if isequal(reportNum,attentionAns)
+            if isequal(attentionReport(trialI,1),attentionAns)
                 % sound(0.2*sin(2*pi*25*(1:3000)/200)); % correct cue
                 [~, ~, ~] = DrawFormattedText(win, 'You are right!','center',SCREEN.center(2)/2,[20 200 20]);
                 if eyelinkMode
                     Eyelink('message', ['Number reported ' num2str(trialI)]);
+                end
+            elseif ~attChosenFlag % no choice
+                sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
+                [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed the number.','center',SCREEN.center(2)/2,[200 20 20]);
+                if eyelinkMode
+                    Eyelink('message', ['Missing number report' num2str(trialI)]);
                 end
             else
                 % sound(0.2*sin(2*pi*25*(1:3000)/600)); % wrong cue
@@ -825,12 +829,6 @@ while trialI < trialNum+1
             end
             Screen('Flip',win,0,0);
             pause(feedbackDuration);
-        elseif ~attChosenFlag % no choice
-            sound(0.2*sin(2*pi*25*(1:3000)/600)); % missing cue
-            [~, ~, ~] = DrawFormattedText(win, 'Oops, you missed this trial.','center',SCREEN.center(2)/2,[200 20 20]);
-            if eyelinkMode
-                Eyelink('message', ['Missing number report' num2str(trialI)]);
-            end
             Screen('Flip',win,0,0);
         else
             Screen('Flip',win,0,0);

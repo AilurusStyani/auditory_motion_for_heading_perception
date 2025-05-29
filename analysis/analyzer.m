@@ -1,7 +1,7 @@
 close all;
 clear all;
 
-dataPath = 'E:\Project\auditory_motion_for_heading_perception\Stimulus\data';
+dataPath = uigetdir(pwd);
 files = dir(fullfile(dataPath,'auditoryMotion_*.mat'));
 figureNum = 1;
 colorIndex = {[0.9,0.0,0.2],[0.8,0.1,0.2],[0.7, 0.2, 0.2],[0.6 0.3 0.2];[0.3 0.6 0.2],[0.2 0.7 0.2],[0.1 0.8 0.2],[0.0 0.9 0.2]};
@@ -124,8 +124,10 @@ for fileI = 1:length(files)
             plot(xi,y_fit,'-k');
             text(5,0.5,sprintf('\\it\\mu_{Bpsy} = \\rm%6.3g\\circ',bBias),'color','k')
             text(5,0.4,sprintf('\\it\\sigma_{Bpsy} = \\rm%6.3g\\circ', bThreshold),'color','k');
-            pred = sqrt((vThreshold^2*aThreshold^2)/(vThreshold^2+aThreshold^2));
-            text(5,0.3,sprintf('\\it\\sigma_{prepsy} = \\rm%6.3g\\circ', pred),'color','k');
+            if ~isempty(visualIndex) && ~isempty(audiIndex)
+                pred = sqrt((vThreshold^2*aThreshold^2)/(vThreshold^2+aThreshold^2));
+                text(5,0.3,sprintf('\\it\\sigma_{prepsy} = \\rm%6.3g\\circ', pred),'color','k');
+            end
         else
             % for segregation condition
             if isempty(segData)
