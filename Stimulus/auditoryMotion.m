@@ -46,7 +46,7 @@ enter     = KbName('Return');
 pageUp = KbName('pageup'); % increase binocular deviation
 pageDown = KbName('pagedown'); % decrease binocular deviation
 
-eyelinkMode = false; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
+eyelinkMode = true; % 1/ture: eyelink is in recording; 0/false: eyelink is not on call
 feedback = 1; % in practice block, set 1 to provide feedback. otherwise set 0
 feedbackDuration = 1; % unit s
 attentionMode = true; % 1/true with attention task
@@ -317,6 +317,7 @@ if eyelinkMode
     
     calibrateCkeck = tic;
     pause(1); % wait a little bit, in case the key press during calibration influence the following keyboard check
+    Screen('FillRect', win ,blackBackground,[0 0 SCREEN.widthPix SCREEN.heightPix]); % set back to black background
 end
 
 %% initial openal
@@ -411,6 +412,9 @@ while trialI < trialNum+1
         [~, ~, ~] = DrawFormattedText(win, num2str(attentionSource),'center',TRIALINFO.fixationPosition(2),[200 200 200]);
         Screen('TextSize', win, oldTextSize);
         Screen('Flip', win);
+        if eyelinkMode
+            Eyelink('message', ['Target Num displaying ' num2str(trialI)]);
+        end
         WaitSecs(TRIALINFO.attentionNumDisplayTime);
     end
     
@@ -554,7 +558,9 @@ while trialI < trialNum+1
     
     frameTime = nan(1,frameNum);
     frameTI = GetSecs;
-    
+    if eyelinkMode
+        Eyelink('message', ['Moving onset ' num2str(trialI)]);
+    end
     % start giving frames
     for framei = 1:frameNum
         if visualPresent
@@ -563,28 +569,7 @@ while trialI < trialNum+1
                 GenerateStarField();
             end
         end
-%         if soundPresent
-%             if ismember(framei,sourceMovingInitialF)
-%                 iList = find(sourceMovingInitialF == framei);
-%                 sourceMovingIndex(iList) = 1;
-%             end
-%             if ismember(framei,sourceMovingTerminalF)
-%                 tList = find(sourceMovingTerminalF == framei);
-%                 sourceMovingIndex(tList) = 0;
-%             end
-%             for i = 1:auditorySourcei{1}
-%                 if sourceMovingIndex(i) == 1
-%                     sourcePosition{i} = sourcePosition{i}+sourceV./SCREEN.refreshRate;
-%                     sourceLocation{trialI,i} = cat(1,sourceLocation{trialI,i},[sourcePosition{i}, framei]);
-%                     alSource3f(sources(i), AL.POSITION, sourcePosition{i}(1), sourcePosition{i}(2), sourcePosition{i}(3));
-%                     
-%                     % Sources themselves remain static in space:
-%                     alSource3f(sources(i), AL.VELOCITY, sourceV(1), sourceV(2), sourceV(3));
-%                 elseif sourceMovingTerminalF(i) == framei
-%                     alSource3f(sources(i), AL.VELOCITY, 0, 0, 0);
-%                 end
-%             end
-%         end
+        
         [~,~,keyCode] = KbCheck;
         if keyCode(escape)
             break
@@ -659,14 +644,14 @@ while trialI < trialNum+1
             DrawDots3D(win,[STARDATA.x ; STARDATA.y; STARDATA.z]);
             Screen('EndOpenGL', win);
             if attentionMode
-                drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+               % drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
                 oldTextSize = Screen('TextSize', win, TRIALINFO.attentionNumSize);
                 [~, ~, ~] = DrawFormattedText(win, num2str(attentionSequence(attentionSeqOrder)),'center',TRIALINFO.fixationPosition(2)+TRIALINFO.attentionNumLocation(2)*SCREEN.heightPix,[200 200 200]);
                 Screen('TextSize', win, oldTextSize);
             end
             Screen('Flip', win);
         else
-            drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
+            % drawFixation(TRIALINFO.fixationPosition,TRIALINFO.fixationSizeP,win);
             if attentionMode
                 oldTextSize = Screen('TextSize', win, TRIALINFO.attentionNumSize);
                 [~, ~, ~] = DrawFormattedText(win, num2str(attentionSequence(attentionSeqOrder)),'center',TRIALINFO.fixationPosition(2)+TRIALINFO.attentionNumLocation(2)*SCREEN.heightPix,[200 200 200]);
@@ -678,7 +663,9 @@ while trialI < trialNum+1
         frameTime(framei) = GetSecs - frameTI;
         frameTI = GetSecs;
     end
-    
+    if eyelinkMode
+        Eyelink('message', ['Moving stopped ' num2str(trialI)]);
+    end
     % Stop playback of all sources:
     if soundPresent
         alSourceStopv(auditorySourcei{1}, sources(1:auditorySourcei{1}));
@@ -708,6 +695,9 @@ while trialI < trialNum+1
     Screen('DrawingFinished',win);
     Screen('Flip',win,0,0);
     chosenFlag = false;
+    if eyelinkMode
+        Eyelink('message', ['Start selection ' num2str(trialI)]);
+    end
     while toc(startChoice) <= TRIALINFO.choicePeriod
         [ keyIsDown, ~, keyCode ] = KbCheck;
         if keyIsDown
