@@ -1,0 +1,18 @@
+[13-May-2025 15:37:37] 错误发生
+标识符: 
+消息: assertOpenGlSuccess
+堆栈跟踪:
+	文件: E:\Project\auditory_motion_for_heading_perception\Stimulus\errorTest.m
+	函数: errorTest
+	行号: 207
+
+----------------------------------------
+[13-May-2025 15:38:19] 错误发生
+标识符: 
+消息: assertOpenGlSuccess
+堆栈跟踪:
+	文件: E:\Project\auditory_motion_for_heading_perception\Stimulus\errorTest.m
+	函数: errorTest
+	行号: 208
+
+----------------------------------------
